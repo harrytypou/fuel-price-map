@@ -10,6 +10,7 @@ const FALLBACK_RATES = {
 };
 
 const ZERO_DECIMAL = new Set(["HUF", "ISK", "RSD"]);
+let previousDocumentTitle = document.title;
 
 const state = {
   countries: JSON.parse(JSON.stringify(window.EUROPE_COUNTRIES || [])),
@@ -139,6 +140,13 @@ function colorFor(value, min, max) {
   if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max) || min === max) return "#3a3a3a";
   const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
   const level = Math.round(44 + t * 92);
+  return `rgb(${level} ${level} ${level})`;
+}
+
+function printMapColorFor(value, min, max) {
+  if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max) || min === max) return "#e6e6e6";
+  const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  const level = Math.round(235 - t * 120);
   return `rgb(${level} ${level} ${level})`;
 }
 
@@ -538,32 +546,73 @@ function preparePdfReport() {
   if (!report) return;
 
   const generatedAt = new Date();
-  const priceText = state.priceStatus === "live" ? "Live Fuelo feed" : "Backup dataset";
-  const rateText = state.rateStatus === "live" ? "live exchange rates" : "backup exchange rates";
+  const priceText = state.priceStatus === "live" ? "Live Fuelo data" : "Backup data";
+  const rateText = state.rateStatus === "live" ? "live FX" : "backup FX";
   const lastUpdated = state.lastUpdated ? new Date(state.lastUpdated).toLocaleString() : "not available";
 
   const meta = $("pdfReportMeta");
   if (meta) {
-    meta.textContent = `Generated ${generatedAt.toLocaleString()} · ${FUEL_LABELS[state.fuel]} layer · Updated ${lastUpdated}`;
+    meta.textContent = `Generated ${generatedAt.toLocaleString()} · Updated ${lastUpdated}`;
   }
 
   const currency = $("pdfCurrency");
+  const fuelLayer = $("pdfFuelLayer");
   const count = $("pdfCountryCount");
   const status = $("pdfDataStatus");
   const caption = $("pdfMapCaption");
   if (currency) currency.textContent = state.currency;
+  if (fuelLayer) fuelLayer.textContent = FUEL_LABELS[state.fuel];
   if (count) count.textContent = String(state.countries.length);
   if (status) status.textContent = `${priceText} · ${rateText}`;
-  if (caption) caption.textContent = `${FUEL_LABELS[state.fuel]} price level by country. Lower prices are darker; higher prices are lighter.`;
+  if (caption) caption.textContent = `${FUEL_LABELS[state.fuel]} price level by country. Darker shading indicates a higher price within the selected currency.`;
 
   const mapFrame = $("pdfMapFrame");
   const svg = $("europeSvg");
   if (mapFrame && svg) {
     mapFrame.innerHTML = "";
     const clone = svg.cloneNode(true);
+    const { min, max } = priceRange();
     clone.removeAttribute("id");
     clone.classList.add("pdf-map-svg");
     clone.setAttribute("aria-hidden", "true");
+    clone.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+    clone.querySelectorAll(".sea").forEach((node) => {
+      node.style.fill = "#ffffff";
+    });
+
+    clone.querySelectorAll(".land-path").forEach((node) => {
+      node.style.fill = "#efefef";
+      node.style.stroke = "#efefef";
+      node.style.strokeWidth = "2.4";
+    });
+
+    clone.querySelectorAll(".country-path").forEach((node) => {
+      const country = byIso(node.dataset.iso);
+      node.style.fill = country ? printMapColorFor(converted(country), min, max) : "#e6e6e6";
+      node.style.stroke = "#ffffff";
+      node.style.strokeWidth = "1.05";
+      node.style.opacity = "1";
+      node.classList.remove("is-selected", "is-dimmed");
+    });
+
+    clone.querySelectorAll("#highlightLayer, .highlight-path, .highlight-dot-ring").forEach((node) => {
+      node.innerHTML = "";
+      if (node.classList?.contains("highlight-path") || node.classList?.contains("highlight-dot-ring")) node.remove();
+    });
+
+    clone.querySelectorAll(".micro-dot").forEach((node) => {
+      node.style.fill = "#111111";
+      node.style.stroke = "#ffffff";
+      node.style.strokeWidth = "3.2";
+      node.setAttribute("r", "4.8");
+    });
+
+    clone.querySelectorAll(".micro-label").forEach((node) => {
+      node.style.fill = "#111111";
+      node.style.fontWeight = "800";
+    });
+
     clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
     mapFrame.appendChild(clone);
   }

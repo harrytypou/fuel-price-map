@@ -706,8 +706,8 @@ body.is-ready .site-footer {
 
 @media print {
   @page {
-    size: A4 landscape;
-    margin: 11mm;
+    size: A4 portrait;
+    margin: 8mm;
   }
 
   html,
@@ -715,8 +715,8 @@ body.is-ready .site-footer {
     width: auto !important;
     min-height: auto !important;
     margin: 0 !important;
-    background: #050505 !important;
-    color: #f2f2f2 !important;
+    background: #ffffff !important;
+    color: #111111 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -732,27 +732,37 @@ body.is-ready .site-footer {
     display: block !important;
   }
 
+  .pdf-report,
+  .pdf-report * {
+    box-sizing: border-box;
+  }
+
   .pdf-report {
-    background: #050505 !important;
-    color: #f2f2f2 !important;
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
+    background: #ffffff !important;
+    color: #111111 !important;
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     letter-spacing: -0.01em;
   }
 
   .pdf-report-header {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 24px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #3a3a3a;
+    display: grid;
+    grid-template-columns: 44mm 1fr;
+    align-items: end;
+    gap: 10mm;
+    padding-bottom: 4.2mm;
+    border-bottom: 0.45mm solid #111111;
     page-break-after: avoid;
   }
 
   .pdf-report-header img {
     display: block;
-    width: 112px;
+    width: 33mm;
     height: auto;
+    filter: invert(1);
   }
 
   .pdf-report-header div {
@@ -760,99 +770,123 @@ body.is-ready .site-footer {
   }
 
   .pdf-report-header h1 {
-    margin: 0 0 6px;
+    margin: 0 0 1.4mm;
     max-width: none;
-    font-size: 26px;
-    line-height: 1;
-    letter-spacing: -0.05em;
+    color: #111111 !important;
+    font-size: 17pt;
+    line-height: 0.95;
+    letter-spacing: -0.055em;
+    font-weight: 850;
   }
 
   .pdf-report-header p,
   .pdf-section-heading p,
   .pdf-report-footer {
     margin: 0;
-    color: #a6a6a6 !important;
-    font-size: 8.5pt;
-    line-height: 1.35;
+    color: #555555 !important;
+    font-size: 6.2pt;
+    line-height: 1.2;
+    letter-spacing: 0;
   }
 
   .pdf-report-summary {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    margin: 12px 0 14px;
-    border: 1px solid #383838;
+    grid-template-columns: repeat(4, 1fr);
+    margin: 4.2mm 0 4.8mm;
+    border: 0.25mm solid #111111;
     page-break-inside: avoid;
   }
 
   .pdf-report-summary div {
-    padding: 8px 10px;
-    border-right: 1px solid #383838;
+    padding: 2.2mm 2.8mm;
+    border-right: 0.25mm solid #111111;
   }
 
   .pdf-report-summary div:last-child { border-right: 0; }
 
   .pdf-report-summary span {
     display: block;
-    margin-bottom: 3px;
-    color: #8e8e8e !important;
-    font-size: 7.5pt;
+    margin-bottom: 1mm;
+    color: #666666 !important;
+    font-size: 5.3pt;
+    line-height: 1;
     text-transform: uppercase;
     letter-spacing: 0.12em;
+    font-weight: 750;
   }
 
   .pdf-report-summary strong {
     display: block;
-    color: #f2f2f2 !important;
-    font-size: 12pt;
-    line-height: 1.15;
+    color: #111111 !important;
+    font-size: 8.2pt;
+    line-height: 1.05;
+    font-weight: 850;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .pdf-map-block {
     page-break-inside: avoid;
     break-inside: avoid;
-    margin-bottom: 15px;
+    margin-bottom: 4.6mm;
   }
 
   .pdf-section-heading {
     display: flex;
     align-items: end;
     justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 8px;
+    gap: 8mm;
+    margin-bottom: 1.8mm;
   }
 
   .pdf-section-heading h2 {
     margin: 0;
-    font-size: 15pt;
+    color: #111111 !important;
+    font-size: 9.4pt;
     line-height: 1;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.035em;
+    font-weight: 850;
   }
 
   .pdf-map-frame {
-    height: 90mm;
-    border: 1px solid #383838;
-    background: #080808 !important;
+    height: 47mm;
+    border: 0.25mm solid #111111;
+    background: #ffffff !important;
     overflow: hidden;
+    page-break-inside: avoid;
   }
 
   .pdf-map-svg {
     width: 100%;
     height: 100%;
     display: block;
-    background: #080808 !important;
+    background: #ffffff !important;
+  }
+
+  .pdf-map-svg .country-path,
+  .pdf-map-svg .land-path,
+  .pdf-map-svg .micro-dot,
+  .pdf-map-svg .micro-label {
+    transition: none !important;
+    animation: none !important;
   }
 
   .pdf-table-block {
-    margin-top: 8px;
+    margin-top: 0;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   .pdf-table {
     width: 100%;
     min-width: 0;
     border-collapse: collapse;
-    font-size: 7.4pt;
-    line-height: 1.22;
-    page-break-inside: auto;
+    table-layout: fixed;
+    font-size: 5.55pt;
+    line-height: 1.03;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   .pdf-table thead {
@@ -862,20 +896,25 @@ body.is-ready .site-footer {
   .pdf-table th {
     position: static !important;
     background: #111111 !important;
-    color: #f2f2f2 !important;
-    border: 1px solid #383838;
-    padding: 5px 7px;
+    color: #ffffff !important;
+    border: 0.18mm solid #111111;
+    padding: 1.05mm 1.3mm;
     text-align: left;
-    font-size: 7.5pt;
-    font-weight: 800;
+    font-size: 5.4pt;
+    line-height: 1;
+    font-weight: 850;
+    white-space: nowrap;
   }
 
   .pdf-table td {
-    border: 1px solid #282828;
-    padding: 4.2px 7px;
-    color: #e6e6e6 !important;
-    background: #080808 !important;
+    border: 0.16mm solid #d8d8d8;
+    padding: 0.46mm 1.3mm;
+    color: #111111 !important;
+    background: #ffffff !important;
     vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .pdf-table tr {
@@ -884,27 +923,33 @@ body.is-ready .site-footer {
   }
 
   .pdf-table tbody tr:nth-child(even) td {
-    background: #0d0d0d !important;
+    background: #f4f4f4 !important;
+  }
+
+  .pdf-table th:first-child,
+  .pdf-table td:first-child {
+    width: 39%;
   }
 
   .pdf-table th:nth-child(2),
   .pdf-table td:nth-child(2) {
-    width: 34px;
+    width: 9%;
     text-align: center;
   }
 
   .pdf-table th:nth-child(n+3),
   .pdf-table td:nth-child(n+3) {
+    width: 17.33%;
     text-align: right;
-    white-space: nowrap;
   }
 
   .pdf-report-footer {
     display: flex;
     justify-content: space-between;
-    gap: 20px;
-    margin-top: 12px;
-    padding-top: 8px;
-    border-top: 1px solid #383838;
+    gap: 8mm;
+    margin-top: 3.3mm;
+    padding-top: 2.3mm;
+    border-top: 0.25mm solid #111111;
+    color: #555555 !important;
   }
 }
