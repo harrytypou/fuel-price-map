@@ -391,7 +391,21 @@ function getRows() {
   return rows;
 }
 
+function updateSortHeaders() {
+  document.querySelectorAll("th[data-sort]").forEach((th) => {
+    const isActive = th.dataset.sort === state.sortKey;
+    th.classList.toggle("is-sort-active", isActive);
+    th.classList.toggle("is-sort-asc", isActive && state.sortDirection === "asc");
+    th.classList.toggle("is-sort-desc", isActive && state.sortDirection === "desc");
+    th.setAttribute("aria-sort", isActive ? (state.sortDirection === "asc" ? "ascending" : "descending") : "none");
+    th.setAttribute("title", isActive
+      ? `Sorted ${state.sortDirection === "asc" ? "ascending" : "descending"}. Click to reverse.`
+      : "Click to sort");
+  });
+}
+
 function renderTable() {
+  updateSortHeaders();
   const rows = getRows();
   tableBody.innerHTML = "";
   if (!rows.length) {
@@ -433,11 +447,13 @@ function highlightTableRow() {
 }
 
 function renderStatus() {
-  const priceText = state.priceStatus === "live" ? "Fuelo live" : "Backup sample";
-  const rateText = state.rateStatus === "live" ? "live FX" : "backup FX";
+  const priceText = state.priceStatus === "live" ? "Live price feed" : "Backup dataset";
+  const rateText = state.rateStatus === "live" ? "Live FX" : "Backup FX";
   const date = state.lastUpdated ? new Date(state.lastUpdated).toLocaleString() : "not available";
   sourceMeta.innerHTML = `<strong>${priceText}</strong><br>${state.countries.length} countries · ${state.currency} · ${rateText}<br>Updated: ${date}`;
-  technicalStatus.textContent = `Price source: ${priceText}. Currency source: ${rateText}. Current fuel layer: ${FUEL_LABELS[state.fuel]}.`;
+  if (technicalStatus) {
+    technicalStatus.textContent = `${priceText} · ${rateText} · ${FUEL_LABELS[state.fuel]} · Updated ${date}`;
+  }
 }
 
 function renderAll() {
@@ -552,6 +568,8 @@ function setupControls() {
 }
 
 async function init() {
+  const year = $("currentYear");
+  if (year) year.textContent = new Date().getFullYear();
   setupControls();
   renderAll();
   requestAnimationFrame(() => {

@@ -17,7 +17,7 @@
     <nav class="header-nav" aria-label="Primary navigation">
       <a href="#map">Map</a>
       <a href="#table">Prices</a>
-      <a href="#source">Source</a>
+      <a href="#footer">About</a>
     </nav>
   </header>
 
@@ -125,10 +125,10 @@
         <table>
           <thead>
             <tr>
-              <th scope="col" data-sort="name">Country</th>
-              <th scope="col" data-sort="gasoline95">Gasoline 95</th>
-              <th scope="col" data-sort="diesel">Diesel</th>
-              <th scope="col" data-sort="lpg">LPG</th>
+              <th scope="col" data-sort="name" aria-sort="none"><span class="sort-label">Country<span class="sort-indicator" aria-hidden="true"></span></span></th>
+              <th scope="col" data-sort="gasoline95" aria-sort="ascending"><span class="sort-label">Gasoline 95<span class="sort-indicator" aria-hidden="true"></span></span></th>
+              <th scope="col" data-sort="diesel" aria-sort="none"><span class="sort-label">Diesel<span class="sort-indicator" aria-hidden="true"></span></span></th>
+              <th scope="col" data-sort="lpg" aria-sort="none"><span class="sort-label">LPG<span class="sort-indicator" aria-hidden="true"></span></span></th>
             </tr>
           </thead>
           <tbody id="priceTableBody"></tbody>
@@ -136,14 +136,34 @@
       </div>
     </section>
 
-    <section class="source" id="source">
-      <h2>Source</h2>
-      <p>
-        Fuelio requests price data in EUR from Fuelo through <code>/api/fuelo</code>. Currency conversion uses <code>/api/rates</code>. Flags are loaded as image files, not emoji flags.
-      </p>
-      <p id="technicalStatus">Waiting for data…</p>
-    </section>
   </main>
+
+  <footer class="site-footer" id="footer">
+    <div class="footer-brand">
+      <img src="/assets/fuelio-logo.png" alt="Fuelio" width="122" height="35" />
+      <p>Clean fuel-price comparison for European drivers.</p>
+    </div>
+
+    <div class="footer-grid">
+      <div>
+        <span>Data</span>
+        <p>Fuel prices are requested in EUR from Fuelo. Currency conversion is calculated using current exchange-rate data.</p>
+      </div>
+      <div>
+        <span>Coverage</span>
+        <p>Gasoline 95, diesel and LPG prices across supported European countries.</p>
+      </div>
+      <div>
+        <span>Status</span>
+        <p id="technicalStatus">Waiting for data…</p>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© <span id="currentYear"></span> Fuelio</span>
+      <span>Prices are indicative. Always verify locally before buying fuel.</span>
+    </div>
+  </footer>
 
   <script src="/assets/europe-map.js"></script>
   <script src="/assets/countries.js"></script>
