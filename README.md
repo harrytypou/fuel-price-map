@@ -1,44 +1,42 @@
-# EuroFuel — Vercel-ready fuel price map
+# Fuelio — Europe fuel prices
 
-Minimal interactive Europe fuel-price map.
+Minimal Vercel-ready static site with serverless API routes.
 
 ## What changed in this version
 
-- Real SVG country outlines instead of marker blobs.
-- No D3, no TopoJSON CDN, no external map library.
-- Very minimal dark design: no gradients, no rounded cards, no fake glass UI.
-- Vercel serverless routes:
-  - `/api/fuelo` fetches EUR prices from Fuelo server-side.
-  - `/api/rates` fetches exchange rates server-side.
-- Flags try FlagDownload first and fall back to another public PNG flag source only if hotlinking fails.
+- Dark minimal design kept, but the hero and table are cleaner.
+- Header now uses the Fuelio logo from `assets/fuelio-logo.png`.
+- The map now has a separate land underlay behind the country paths. This reduces the visible black gaps between neighbouring countries and makes the map look more like one continuous landmass.
+- Countries are brighter and no longer blend into the background.
+- Browser/SVG focus rectangles on countries are disabled.
+- Hover/click map animations are still enabled.
 
 ## Deploy to Vercel
 
-Upload the **contents** of this folder to GitHub, then import the repository in Vercel.
+Upload the contents of this folder to a GitHub repo, then import the repo into Vercel.
 
 Recommended Vercel settings:
 
-- Framework Preset: `Other`
-- Build Command: empty
-- Output Directory: empty
-- Install Command: empty or default
-
-After deploy, test:
-
-- `/`
-- `/api/fuelo`
-- `/api/rates`
-
-## Local test
-
-Install the Vercel CLI:
-
-```bash
-npm i -g vercel
+```text
+Framework Preset: Other
+Build Command: leave empty
+Output Directory: leave empty
 ```
 
-Run:
+Test after deployment:
 
-```bash
-vercel dev
+```text
+/
+/api/fuelo
+/api/rates
 ```
+
+## Logo
+
+The site references:
+
+```text
+/assets/fuelio-logo.png
+```
+
+The included file is a clean temporary Fuelio wordmark at 1007×287 px. Replace that file with your final logo using the same filename to keep the site working without code changes.

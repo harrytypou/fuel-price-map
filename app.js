@@ -28,6 +28,7 @@ const state = {
 };
 
 const $ = (id) => document.getElementById(id);
+const landLayer = $("landLayer");
 const countryLayer = $("countryLayer");
 const microLayer = $("microLayer");
 const tooltip = $("mapTooltip");
@@ -115,17 +116,25 @@ function priceRange() {
 }
 
 function colorFor(value, min, max) {
-  if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max) || min === max) return "#555";
+  if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max) || min === max) return "#3a3a3a";
   const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
-  const level = Math.round(32 + t * 188);
+  const level = Math.round(44 + t * 92);
   return `rgb(${level} ${level} ${level})`;
 }
 
 function renderMap() {
   const mapData = window.EUROPE_MAP;
   const { min, max } = priceRange();
+  landLayer.innerHTML = "";
   countryLayer.innerHTML = "";
   microLayer.innerHTML = "";
+
+  mapData.countries.forEach((feature) => {
+    const base = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    base.setAttribute("d", feature.d);
+    base.classList.add("land-path");
+    landLayer.appendChild(base);
+  });
 
   mapData.countries.forEach((feature) => {
     const country = byIso(feature.iso);
@@ -134,11 +143,11 @@ function renderMap() {
     path.dataset.iso = feature.iso;
     path.classList.add("country-path");
     path.setAttribute("aria-label", country ? country.name : feature.name);
-    path.setAttribute("tabindex", "0");
+    path.setAttribute("focusable", "false");
 
     const value = country ? converted(country) : null;
     path.style.fill = colorFor(value, min, max);
-    if (!country) path.style.fill = "#151515";
+    if (!country) path.style.fill = "#262626";
 
     bindRegionEvents(path, feature.iso);
     countryLayer.appendChild(path);
@@ -150,7 +159,7 @@ function renderMap() {
     const [x, y] = point;
     const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
     group.dataset.iso = iso;
-    group.setAttribute("tabindex", "0");
+    group.setAttribute("focusable", "false");
     group.setAttribute("aria-label", country.name);
 
     const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -182,14 +191,6 @@ function bindRegionEvents(el, iso) {
     showCountry(iso, event, true);
     applySelectionClasses();
     highlightTableRow();
-  });
-  el.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      state.selectedIso = iso;
-      showCountry(iso, event, true);
-      applySelectionClasses();
-    }
   });
 }
 
@@ -349,8 +350,8 @@ function highlightTableRow() {
 }
 
 function renderStatus() {
-  const priceText = state.priceStatus === "live" ? "Fuelo live" : "Demo fallback";
-  const rateText = state.rateStatus === "live" ? "live FX" : "fallback FX";
+  const priceText = state.priceStatus === "live" ? "Fuelo live" : "Backup sample";
+  const rateText = state.rateStatus === "live" ? "live FX" : "backup FX";
   const date = state.lastUpdated ? new Date(state.lastUpdated).toLocaleString() : "not available";
   sourceMeta.innerHTML = `<strong>${priceText}</strong><br>${state.countries.length} countries · ${state.currency} · ${rateText}<br>Updated: ${date}`;
   technicalStatus.textContent = `Price source: ${priceText}. Currency source: ${rateText}. Current fuel layer: ${FUEL_LABELS[state.fuel]}.`;
@@ -464,7 +465,6 @@ async function init() {
   setupControls();
   renderAll();
   await Promise.all([loadFuelPrices(), loadRates()]);
-  state.selectedIso = "GR";
   renderAll();
 }
 

@@ -3,32 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>EuroFuel — Europe fuel prices</title>
-  <meta name="description" content="Minimal interactive Europe fuel-price map with live Fuelo data and currency conversion." />
+  <title>Fuelio — Europe fuel prices</title>
+  <meta name="description" content="Fuelio is a minimal interactive Europe fuel-price map with live Fuelo data and currency conversion." />
   <link rel="icon" href="/assets/favicon.svg" />
+  <link rel="preload" href="/assets/fuelio-logo.png" as="image" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="#" aria-label="EuroFuel home">
-      <span class="brand-mark"></span>
-      <span>EuroFuel</span>
+    <a class="brand" href="#" aria-label="Fuelio home">
+      <img class="brand-logo" src="/assets/fuelio-logo.png" alt="Fuelio" width="176" height="50" />
     </a>
     <nav class="header-nav" aria-label="Primary navigation">
       <a href="#map">Map</a>
-      <a href="#table">Table</a>
+      <a href="#table">Prices</a>
       <a href="#source">Source</a>
     </nav>
   </header>
 
   <main>
     <section class="hero" aria-labelledby="page-title">
-      <div>
+      <div class="hero-copy">
         <p class="eyebrow">Europe fuel prices</p>
-        <h1 id="page-title">Clean fuel-price comparison across Europe.</h1>
-        <p class="subhead">Interactive country outlines, live Fuelo fetching, real flag images and current exchange-rate conversion.</p>
+        <h1 id="page-title">Compare fuel prices across Europe.</h1>
+        <p class="subhead">Gasoline, diesel and LPG prices by country. Data is requested in EUR and converted using current exchange rates.</p>
       </div>
-      <div class="meta-block" id="sourceMeta">Loading live data…</div>
+      <div class="meta-block" id="sourceMeta">Loading data…</div>
     </section>
 
     <section class="toolbar" aria-label="Controls">
@@ -66,7 +66,7 @@
       <div class="map-header">
         <div>
           <h2>Europe map</h2>
-          <p>Hover or click a country to compare fuel prices.</p>
+          <p>Hover or click a country for details.</p>
         </div>
         <div class="legend" aria-label="Map legend">
           <span>Lower</span>
@@ -79,6 +79,7 @@
         <div class="map-panel">
           <svg id="europeSvg" viewBox="0 0 1000 760" role="img" aria-label="Europe map with country borders">
             <rect class="sea" x="0" y="0" width="1000" height="760"></rect>
+            <g id="landLayer"></g>
             <g id="countryLayer"></g>
             <g id="microLayer"></g>
           </svg>
@@ -86,7 +87,7 @@
         </div>
 
         <aside class="details-panel" aria-label="Selected country details">
-          <p class="panel-label">Selected country</p>
+          <p class="panel-label">Country</p>
           <div id="countryDetails" class="country-details empty">Hover the map.</div>
         </aside>
       </div>
@@ -113,8 +114,8 @@
     <section class="table-section" id="table" aria-label="Country fuel price table">
       <div class="section-title-row">
         <div>
-          <p class="eyebrow">Country table</p>
-          <h2>Search, sort, compare.</h2>
+          <p class="eyebrow">Price table</p>
+          <h2>Search and compare.</h2>
         </div>
         <input id="searchInput" type="search" placeholder="Search country" aria-label="Search country" />
       </div>
@@ -137,7 +138,7 @@
     <section class="source" id="source">
       <h2>Source</h2>
       <p>
-        Price data is requested in EUR from Fuelo through the serverless API route <code>/api/fuelo</code>. Currency conversion uses the serverless route <code>/api/rates</code>. Flags try FlagDownload first and fall back to another public flag image source only when hotlinking fails.
+        Fuelio requests price data in EUR from Fuelo through <code>/api/fuelo</code>. Currency conversion uses <code>/api/rates</code>. Flags are loaded as image files, not emoji flags.
       </p>
       <p id="technicalStatus">Waiting for data…</p>
     </section>
