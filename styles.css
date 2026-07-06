@@ -352,7 +352,9 @@ select {
   transform: none;
 }
 .country-path.is-dimmed { opacity: 0.36; }
-#highlightLayer { pointer-events: none; }
+#highlightLayer,
+#microLayer { pointer-events: none; }
+#microLayer g { pointer-events: auto; }
 .highlight-path {
   fill: none;
   stroke: #ffffff;
@@ -369,9 +371,10 @@ select {
 }
 .micro-dot {
   cursor: pointer;
-  fill: #dcdcdc;
+  fill: #f0f0f0;
   stroke: var(--sea);
-  stroke-width: 2.8;
+  stroke-width: 3.2;
+  paint-order: stroke fill;
   transition: r 150ms ease, fill 150ms ease, stroke 150ms ease, opacity 150ms ease;
   -webkit-tap-highlight-color: transparent;
 }
@@ -382,6 +385,9 @@ select {
   font-size: 11px;
   font-weight: 700;
   pointer-events: none;
+  paint-order: stroke fill;
+  stroke: var(--sea);
+  stroke-width: 3px;
 }
 #microLayer g.is-dimmed { opacity: 0.38; }
 .tooltip {

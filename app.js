@@ -38,13 +38,17 @@ const sourceMeta = $("sourceMeta");
 const technicalStatus = $("technicalStatus");
 const selectedDetails = $("countryDetails");
 
-// The selected/hovered outline is drawn in a separate top SVG layer so
-// neighboring countries can never overlap or cut off the white stroke.
+// The selected/hovered outline is drawn above countries, while the microstate
+// dot layer is always re-appended last so dots never get covered by borders.
 if (!highlightLayer && $("europeSvg")) {
   highlightLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
   highlightLayer.id = "highlightLayer";
   highlightLayer.setAttribute("aria-hidden", "true");
   $("europeSvg").appendChild(highlightLayer);
+}
+if ($("europeSvg") && highlightLayer && microLayer) {
+  $("europeSvg").appendChild(highlightLayer);
+  $("europeSvg").appendChild(microLayer);
 }
 
 // Keep the tooltip outside animated layout containers. This makes cursor tracking
@@ -201,6 +205,12 @@ function renderMap() {
     bindRegionEvents(group, iso);
     microLayer.appendChild(group);
   });
+
+  // Defensively keep the dot layer as the final SVG layer after every render.
+  if ($("europeSvg") && highlightLayer && microLayer) {
+    $("europeSvg").appendChild(highlightLayer);
+    $("europeSvg").appendChild(microLayer);
+  }
 
   applySelectionClasses();
 }
