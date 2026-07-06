@@ -707,14 +707,15 @@ body.is-ready .site-footer {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 8mm;
+    margin: 12mm;
   }
 
   html,
   body {
+    margin: 0 !important;
+    padding: 0 !important;
     width: auto !important;
     min-height: auto !important;
-    margin: 0 !important;
     background: #ffffff !important;
     color: #111111 !important;
     -webkit-print-color-adjust: exact !important;
@@ -735,158 +736,97 @@ body.is-ready .site-footer {
   .pdf-report,
   .pdf-report * {
     box-sizing: border-box;
+    background: transparent !important;
+    color: #111111 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    animation: none !important;
+    transition: none !important;
   }
 
   .pdf-report {
     width: 100%;
-    min-height: 0;
-    height: auto;
-    overflow: visible;
-    background: #ffffff !important;
-    color: #111111 !important;
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    letter-spacing: -0.01em;
-  }
-
-  .pdf-report-header {
-    display: grid;
-    grid-template-columns: 44mm 1fr;
-    align-items: end;
-    gap: 10mm;
-    padding-bottom: 4.2mm;
-    border-bottom: 0.45mm solid #111111;
-    page-break-after: avoid;
-  }
-
-  .pdf-report-header img {
-    display: block;
-    width: 33mm;
-    height: auto;
-    filter: invert(1);
-  }
-
-  .pdf-report-header div {
-    text-align: right;
-  }
-
-  .pdf-report-header h1 {
-    margin: 0 0 1.4mm;
-    max-width: none;
-    color: #111111 !important;
-    font-size: 17pt;
-    line-height: 0.95;
-    letter-spacing: -0.055em;
-    font-weight: 850;
-  }
-
-  .pdf-report-header p,
-  .pdf-section-heading p,
-  .pdf-report-footer {
     margin: 0;
-    color: #555555 !important;
-    font-size: 6.2pt;
-    line-height: 1.2;
+    padding: 0;
+    font-family: "Times New Roman", Times, serif !important;
     letter-spacing: 0;
   }
 
-  .pdf-report-summary {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    margin: 4.2mm 0 4.8mm;
-    border: 0.25mm solid #111111;
-    page-break-inside: avoid;
+  .pdf-page {
+    width: 100%;
+    min-height: 273mm;
+    display: flex;
+    flex-direction: column;
   }
 
-  .pdf-report-summary div {
-    padding: 2.2mm 2.8mm;
-    border-right: 0.25mm solid #111111;
+  .pdf-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16mm;
+    padding-bottom: 7mm;
+    margin-bottom: 7mm;
+    border-bottom: 0.25mm solid #111111;
+    break-after: avoid;
+    page-break-after: avoid;
   }
 
-  .pdf-report-summary div:last-child { border-right: 0; }
+  .pdf-brand {
+    margin: 0;
+    font-size: 24pt;
+    line-height: 0.92;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
 
-  .pdf-report-summary span {
+  .pdf-header p {
+    margin: 2mm 0 0;
+    font-size: 9pt;
+    line-height: 1.25;
+    color: #555555 !important;
+  }
+
+  .pdf-issued {
+    min-width: 44mm;
+    text-align: right;
+  }
+
+  .pdf-issued span,
+  .pdf-meta span {
     display: block;
     margin-bottom: 1mm;
-    color: #666666 !important;
-    font-size: 5.3pt;
+    font-size: 6pt;
     line-height: 1;
+    color: #777777 !important;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-weight: 750;
+    letter-spacing: 0.11em;
   }
 
-  .pdf-report-summary strong {
+  .pdf-issued strong,
+  .pdf-meta strong {
     display: block;
-    color: #111111 !important;
     font-size: 8.2pt;
-    line-height: 1.05;
-    font-weight: 850;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.12;
+    font-weight: 400;
   }
 
-  .pdf-map-block {
-    page-break-inside: avoid;
-    break-inside: avoid;
-    margin-bottom: 4.6mm;
-  }
-
-  .pdf-section-heading {
-    display: flex;
-    align-items: end;
-    justify-content: space-between;
-    gap: 8mm;
-    margin-bottom: 1.8mm;
-  }
-
-  .pdf-section-heading h2 {
-    margin: 0;
-    color: #111111 !important;
-    font-size: 9.4pt;
-    line-height: 1;
-    letter-spacing: -0.035em;
-    font-weight: 850;
-  }
-
-  .pdf-map-frame {
-    height: 47mm;
-    border: 0.25mm solid #111111;
-    background: #ffffff !important;
-    overflow: hidden;
-    page-break-inside: avoid;
-  }
-
-  .pdf-map-svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-    background: #ffffff !important;
-  }
-
-  .pdf-map-svg .country-path,
-  .pdf-map-svg .land-path,
-  .pdf-map-svg .micro-dot,
-  .pdf-map-svg .micro-label {
-    transition: none !important;
-    animation: none !important;
-  }
-
-  .pdf-table-block {
-    margin-top: 0;
-    page-break-inside: avoid;
-    break-inside: avoid;
+  .pdf-meta {
+    display: grid;
+    grid-template-columns: 1.25fr 0.55fr 1.15fr 0.9fr;
+    column-gap: 9mm;
+    row-gap: 3mm;
+    margin-bottom: 8mm;
+    break-after: avoid;
+    page-break-after: avoid;
   }
 
   .pdf-table {
     width: 100%;
-    min-width: 0;
     border-collapse: collapse;
     table-layout: fixed;
-    font-size: 5.55pt;
-    line-height: 1.03;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    font-family: "Times New Roman", Times, serif !important;
+    font-size: 7.05pt;
+    line-height: 1.08;
   }
 
   .pdf-table thead {
@@ -895,22 +835,25 @@ body.is-ready .site-footer {
 
   .pdf-table th {
     position: static !important;
-    background: #111111 !important;
-    color: #ffffff !important;
-    border: 0.18mm solid #111111;
-    padding: 1.05mm 1.3mm;
+    padding: 0 0 2mm;
+    border: 0 !important;
+    border-bottom: 0.25mm solid #111111 !important;
+    font-size: 6.4pt;
+    line-height: 1.1;
     text-align: left;
-    font-size: 5.4pt;
-    line-height: 1;
-    font-weight: 850;
+    font-weight: 700;
+    color: #111111 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
     white-space: nowrap;
   }
 
   .pdf-table td {
-    border: 0.16mm solid #d8d8d8;
-    padding: 0.46mm 1.3mm;
-    color: #111111 !important;
-    background: #ffffff !important;
+    padding: 0.72mm 0;
+    border: 0 !important;
+    border-bottom: 0.15mm solid #d9d9d9 !important;
+    font-size: 7.05pt;
+    line-height: 1.08;
     vertical-align: middle;
     white-space: nowrap;
     overflow: hidden;
@@ -918,38 +861,47 @@ body.is-ready .site-footer {
   }
 
   .pdf-table tr {
-    page-break-inside: avoid;
     break-inside: avoid;
-  }
-
-  .pdf-table tbody tr:nth-child(even) td {
-    background: #f4f4f4 !important;
+    page-break-inside: avoid;
   }
 
   .pdf-table th:first-child,
   .pdf-table td:first-child {
-    width: 39%;
+    width: 42%;
   }
 
   .pdf-table th:nth-child(2),
   .pdf-table td:nth-child(2) {
     width: 9%;
     text-align: center;
+    color: #555555 !important;
   }
 
   .pdf-table th:nth-child(n+3),
   .pdf-table td:nth-child(n+3) {
-    width: 17.33%;
+    width: 16.33%;
     text-align: right;
   }
 
-  .pdf-report-footer {
+  .pdf-row-number {
+    display: inline-block;
+    width: 7mm;
+    color: #999999 !important;
+  }
+
+  .pdf-footer {
     display: flex;
+    align-items: flex-end;
     justify-content: space-between;
     gap: 8mm;
-    margin-top: 3.3mm;
-    padding-top: 2.3mm;
-    border-top: 0.25mm solid #111111;
-    color: #555555 !important;
+    margin-top: auto;
+    padding-top: 6mm;
+    font-size: 7pt;
+    line-height: 1.25;
+    color: #666666 !important;
+  }
+
+  .pdf-footer span {
+    color: #666666 !important;
   }
 }
