@@ -54,4 +54,4 @@ The included file is a clean temporary Fuelio wordmark at 1007×287 px. Replace 
 
 ## PDF export
 
-The PDF export is formatted for A4 portrait printing on white paper. It uses a print-specific report layout with Fuelio branding, a light grayscale map, summary metadata, and the full country fuel-price table.
+The PDF export is generated as an isolated A4 portrait report with a white background, Times New Roman typography, Fuelio credit, report dates, current sort order, and the full country fuel-price table. It does not inherit the dark website theme.

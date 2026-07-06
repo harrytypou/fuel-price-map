@@ -562,6 +562,196 @@ function formatReportDate(value) {
   });
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function buildPdfReportHtml() {
+  const generatedAt = new Date();
+  const infoDate = state.lastUpdated || generatedAt.toISOString();
+  const priceText = state.priceStatus === "live" ? "Fuelo live" : "Backup sample";
+  const rateText = state.rateStatus === "live" ? "live FX" : "backup FX";
+  const host = window.location?.host || "fuelio";
+  const rows = getReportRows().map((country, index) => `
+    <tr>
+      <td><span class="rank">${index + 1}</span>${escapeHtml(country.name)}</td>
+      <td>${escapeHtml(country.iso)}</td>
+      <td>${escapeHtml(perLitre(converted(country, "gasoline95")))}</td>
+      <td>${escapeHtml(perLitre(converted(country, "diesel")))}</td>
+      <td>${escapeHtml(perLitre(converted(country, "lpg")))}</td>
+    </tr>`).join("");
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Fuelio fuel price report</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm 13mm; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #ffffff !important;
+      color: #111111 !important;
+      font-family: "Times New Roman", Times, serif !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body { width: 100%; }
+    .report { width: 100%; background: #ffffff !important; }
+    .top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16mm;
+      padding-bottom: 6mm;
+      border-bottom: 0.25mm solid #111111;
+    }
+    h1 {
+      margin: 0;
+      font-size: 23pt;
+      line-height: 0.9;
+      letter-spacing: -0.035em;
+      font-weight: 700;
+    }
+    .subtitle {
+      margin: 2.5mm 0 0;
+      font-size: 8.5pt;
+      line-height: 1.2;
+      color: #555555 !important;
+      font-weight: 400;
+    }
+    .prepared { text-align: right; min-width: 45mm; }
+    .label {
+      display: block;
+      margin-bottom: 1.2mm;
+      font-size: 5.8pt;
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #777777 !important;
+      font-weight: 700;
+    }
+    .value {
+      display: block;
+      font-size: 8.2pt;
+      line-height: 1.15;
+      color: #111111 !important;
+      font-weight: 400;
+    }
+    .meta {
+      display: grid;
+      grid-template-columns: 1.1fr 0.55fr 1.05fr 0.9fr;
+      gap: 8mm;
+      margin: 6mm 0 5.5mm;
+      padding-bottom: 5.5mm;
+      border-bottom: 0.15mm solid #d8d8d8;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 6.85pt;
+      line-height: 1.06;
+      background: #ffffff !important;
+    }
+    thead { display: table-header-group; }
+    th {
+      padding: 0 0 1.7mm;
+      border: 0;
+      border-bottom: 0.25mm solid #111111;
+      text-align: left;
+      font-size: 6pt;
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-weight: 700;
+      color: #111111 !important;
+      white-space: nowrap;
+    }
+    td {
+      padding: 0.55mm 0;
+      border: 0;
+      border-bottom: 0.12mm solid #dddddd;
+      color: #111111 !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+    }
+    th:nth-child(1), td:nth-child(1) { width: 42%; text-align: left; }
+    th:nth-child(2), td:nth-child(2) { width: 9%; text-align: center; color: #555555 !important; }
+    th:nth-child(n+3), td:nth-child(n+3) { width: 16.33%; text-align: right; }
+    .rank {
+      display: inline-block;
+      width: 7mm;
+      color: #888888 !important;
+      font-variant-numeric: tabular-nums;
+    }
+    .footer {
+      margin-top: 4.5mm;
+      padding-top: 3mm;
+      border-top: 0.15mm solid #d8d8d8;
+      display: flex;
+      justify-content: space-between;
+      gap: 8mm;
+      font-size: 6.6pt;
+      line-height: 1.25;
+      color: #666666 !important;
+    }
+    @media screen {
+      body { padding: 12mm 13mm; }
+    }
+  </style>
+</head>
+<body>
+  <main class="report">
+    <header class="top">
+      <div>
+        <h1>Fuelio</h1>
+        <p class="subtitle">European fuel price report</p>
+      </div>
+      <div class="prepared">
+        <span class="label">Prepared</span>
+        <span class="value">${escapeHtml(formatReportDate(generatedAt.toISOString()))}</span>
+      </div>
+    </header>
+
+    <section class="meta">
+      <div><span class="label">Information date</span><span class="value">${escapeHtml(formatReportDate(infoDate))}</span></div>
+      <div><span class="label">Currency</span><span class="value">${escapeHtml(state.currency)}</span></div>
+      <div><span class="label">Sort order</span><span class="value">${escapeHtml(getReportSortDescription())}</span></div>
+      <div><span class="label">Data</span><span class="value">${escapeHtml(`${priceText} / ${rateText}`)}</span></div>
+    </section>
+
+    <table aria-label="Fuelio fuel price report table">
+      <thead>
+        <tr>
+          <th>Country</th>
+          <th>ISO</th>
+          <th>Gasoline 95</th>
+          <th>Diesel</th>
+          <th>LPG</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+
+    <footer class="footer">
+      <span>Generated by Fuelio${host ? ` · ${escapeHtml(host)}` : ""}</span>
+      <span>Prices are indicative and may vary locally.</span>
+    </footer>
+  </main>
+</body>
+</html>`;
+}
+
 function preparePdfReport() {
   const report = $("pdfReport");
   if (!report) return;
@@ -605,15 +795,41 @@ function preparePdfReport() {
 }
 
 function exportPdfReport() {
-  preparePdfReport();
-  previousDocumentTitle = document.title;
-  const date = new Date().toISOString().slice(0, 10);
-  document.title = `Fuelio fuel price report ${date}`;
-  document.body.classList.add("is-exporting-pdf");
+  const html = buildPdfReportHtml();
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  iframe.style.opacity = "0";
 
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => window.print());
-  });
+  document.body.appendChild(iframe);
+  const printWindow = iframe.contentWindow;
+  const printDocument = iframe.contentDocument || printWindow.document;
+
+  printDocument.open();
+  printDocument.write(html);
+  printDocument.close();
+
+  const cleanup = () => {
+    setTimeout(() => {
+      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    }, 250);
+  };
+
+  if (printWindow) {
+    printWindow.addEventListener("afterprint", cleanup, { once: true });
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      setTimeout(cleanup, 1500);
+    }, 120);
+  } else {
+    cleanup();
+  }
 }
 
 window.addEventListener("beforeprint", preparePdfReport);
