@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fuelio — Europe fuel prices</title>
+  <meta name="description" content="Fuelio is a minimal interactive Europe fuel-price map with live Fuelo data and currency conversion." />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="preload" href="/assets/fuelio-logo.png" as="image" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="is-loading is-fetching">
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="Fuelio home">
+      <img class="brand-logo" src="/assets/fuelio-logo.png" alt="Fuelio" width="176" height="50" />
+    </a>
+    <nav class="header-nav" aria-label="Primary navigation">
+      <a href="#map">Map</a>
+      <a href="#table">Prices</a>
+      <a href="#source">Source</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-copy">
+        <p class="eyebrow">Europe fuel prices</p>
+        <h1 id="page-title">Compare fuel prices across Europe.</h1>
+        <p class="subhead">Gasoline, diesel and LPG prices by country. Data is requested in EUR and converted using current exchange rates.</p>
+      </div>
+      <div class="meta-block" id="sourceMeta">Loading data…</div>
+    </section>
+
+    <section class="toolbar" aria-label="Controls">
+      <div class="segmented" role="tablist" aria-label="Fuel type">
+        <button class="is-active" data-fuel="gasoline95" role="tab" aria-selected="true">Gasoline 95</button>
+        <button data-fuel="diesel" role="tab" aria-selected="false">Diesel</button>
+        <button data-fuel="lpg" role="tab" aria-selected="false">LPG</button>
+      </div>
+      <div class="toolbar-actions">
+        <label>
+          <span>Currency</span>
+          <select id="currencySelect" aria-label="Currency">
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+            <option value="GBP">GBP</option>
+            <option value="CHF">CHF</option>
+            <option value="NOK">NOK</option>
+            <option value="SEK">SEK</option>
+            <option value="DKK">DKK</option>
+            <option value="PLN">PLN</option>
+            <option value="CZK">CZK</option>
+            <option value="HUF">HUF</option>
+            <option value="RON">RON</option>
+            <option value="BGN">BGN</option>
+            <option value="TRY">TRY</option>
+            <option value="RSD">RSD</option>
+            <option value="ISK">ISK</option>
+          </select>
+        </label>
+        <button id="refreshBtn" type="button">Refresh</button>
+      </div>
+    </section>
+
+    <section class="map-section" id="map" aria-label="Interactive Europe fuel map">
+      <div class="map-header">
+        <div>
+          <h2>Europe map</h2>
+          <p>Hover or click a country for details.</p>
+        </div>
+        <div class="legend" aria-label="Map legend">
+          <span>Lower</span>
+          <i></i><i></i><i></i><i></i><i></i>
+          <span>Higher</span>
+        </div>
+      </div>
+
+      <div class="map-grid">
+        <div class="map-panel">
+          <svg id="europeSvg" viewBox="0 0 1000 760" role="img" aria-label="Europe map with country borders">
+            <rect class="sea" x="0" y="0" width="1000" height="760"></rect>
+            <g id="landLayer"></g>
+            <g id="countryLayer"></g>
+            <g id="microLayer"></g>
+          </svg>
+          <div id="mapTooltip" class="tooltip" role="status" aria-live="polite"></div>
+        </div>
+
+        <aside class="details-panel" aria-label="Selected country details">
+          <p class="panel-label">Country</p>
+          <div id="countryDetails" class="country-details empty">Hover the map.</div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="stats" aria-label="Summary statistics">
+      <article>
+        <span>Lowest</span>
+        <strong id="lowestStat">—</strong>
+        <small id="lowestCountry">—</small>
+      </article>
+      <article>
+        <span>Average</span>
+        <strong id="averageStat">—</strong>
+        <small>Displayed countries</small>
+      </article>
+      <article>
+        <span>Highest</span>
+        <strong id="highestStat">—</strong>
+        <small id="highestCountry">—</small>
+      </article>
+    </section>
+
+    <section class="table-section" id="table" aria-label="Country fuel price table">
+      <div class="section-title-row">
+        <div>
+          <p class="eyebrow">Price table</p>
+          <h2>Search and compare.</h2>
+        </div>
+        <input id="searchInput" type="search" placeholder="Search country" aria-label="Search country" />
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col" data-sort="name">Country</th>
+              <th scope="col" data-sort="gasoline95">Gasoline 95</th>
+              <th scope="col" data-sort="diesel">Diesel</th>
+              <th scope="col" data-sort="lpg">LPG</th>
+            </tr>
+          </thead>
+          <tbody id="priceTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="source" id="source">
+      <h2>Source</h2>
+      <p>
+        Fuelio requests price data in EUR from Fuelo through <code>/api/fuelo</code>. Currency conversion uses <code>/api/rates</code>. Flags are loaded as image files, not emoji flags.
+      </p>
+      <p id="technicalStatus">Waiting for data…</p>
+    </section>
+  </main>
+
+  <script src="/assets/europe-map.js"></script>
+  <script src="/assets/countries.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
