@@ -31,11 +31,21 @@ const $ = (id) => document.getElementById(id);
 const landLayer = $("landLayer");
 const countryLayer = $("countryLayer");
 const microLayer = $("microLayer");
+let highlightLayer = $("highlightLayer");
 const tooltip = $("mapTooltip");
 const tableBody = $("priceTableBody");
 const sourceMeta = $("sourceMeta");
 const technicalStatus = $("technicalStatus");
 const selectedDetails = $("countryDetails");
+
+// The selected/hovered outline is drawn in a separate top SVG layer so
+// neighboring countries can never overlap or cut off the white stroke.
+if (!highlightLayer && $("europeSvg")) {
+  highlightLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  highlightLayer.id = "highlightLayer";
+  highlightLayer.setAttribute("aria-hidden", "true");
+  $("europeSvg").appendChild(highlightLayer);
+}
 
 // Keep the tooltip outside animated layout containers. This makes cursor tracking
 // exact even when the map/header/sections use CSS animations.
@@ -301,6 +311,35 @@ function applySelectionClasses() {
     const selected = dot.parentElement?.dataset.iso === active;
     dot.classList.toggle("is-selected", selected);
   });
+  renderMapHighlight(active);
+}
+
+function renderMapHighlight(activeIso) {
+  if (!highlightLayer) return;
+  highlightLayer.innerHTML = "";
+  if (!activeIso) return;
+
+  const mapData = window.EUROPE_MAP;
+  const marker = mapData.markers?.[activeIso];
+
+  if (marker) {
+    const [x, y] = marker;
+    const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    ring.classList.add("highlight-dot-ring");
+    ring.setAttribute("cx", x);
+    ring.setAttribute("cy", y);
+    ring.setAttribute("r", 8.5);
+    highlightLayer.appendChild(ring);
+    return;
+  }
+
+  const feature = mapData.countries.find((item) => item.iso === activeIso);
+  if (!feature) return;
+
+  const outline = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  outline.classList.add("highlight-path");
+  outline.setAttribute("d", feature.d);
+  highlightLayer.appendChild(outline);
 }
 
 function renderStats() {
