@@ -330,6 +330,10 @@ select {
   vector-effect: non-scaling-stroke;
   pointer-events: none;
 }
+.micro-land-path {
+  fill: #1a1a1a;
+  stroke: #1a1a1a;
+}
 .country-path {
   stroke: var(--country-border);
   stroke-width: 0.75;

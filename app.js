@@ -146,10 +146,14 @@ function renderMap() {
   countryLayer.innerHTML = "";
   microLayer.innerHTML = "";
 
-  mapData.countries.filter((feature) => !markerOnlyCountries.has(feature.iso)).forEach((feature) => {
+  // Draw every country shape in the base land layer, including microstates like
+  // Luxembourg. Marker countries are still shown as dots for interaction, but
+  // their real shape stays underneath so the map silhouette remains consistent.
+  mapData.countries.forEach((feature) => {
     const base = document.createElementNS("http://www.w3.org/2000/svg", "path");
     base.setAttribute("d", feature.d);
     base.classList.add("land-path");
+    if (markerOnlyCountries.has(feature.iso)) base.classList.add("micro-land-path");
     landLayer.appendChild(base);
   });
 
