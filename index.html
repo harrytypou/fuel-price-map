@@ -1,240 +1,150 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>EuroFuel Atlas — Live European Fuel Prices</title>
-  <meta name="description" content="A modern animated European fuel-price map powered by Fuelo.eu with live currency conversion." />
-  <meta name="theme-color" content="#070b16" />
-  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
-  <link rel="preconnect" href="https://flagdownload.com" crossorigin />
+  <title>EuroFuel — Europe fuel prices</title>
+  <meta name="description" content="Minimal interactive Europe fuel-price map with live Fuelo data and currency conversion." />
+  <link rel="icon" href="/assets/favicon.svg" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <div class="page-glow page-glow-a"></div>
-  <div class="page-glow page-glow-b"></div>
-
-  <header class="topbar" id="top">
-    <a class="brand" href="#top" aria-label="EuroFuel Atlas home">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <span>
-        <strong>EuroFuel Atlas</strong>
-        <small>Fuelo-powered map</small>
-      </span>
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="EuroFuel home">
+      <span class="brand-mark"></span>
+      <span>EuroFuel</span>
     </a>
-
-    <nav class="nav-links" aria-label="Main navigation">
+    <nav class="header-nav" aria-label="Primary navigation">
       <a href="#map">Map</a>
-      <a href="#countries">Countries</a>
-      <a href="#data">Data</a>
+      <a href="#table">Table</a>
+      <a href="#source">Source</a>
     </nav>
-
-    <div class="topbar-actions">
-      <button class="ghost-btn" id="refreshBtn" type="button">Refresh</button>
-      <button class="icon-btn" id="themeBtn" type="button" aria-label="Toggle theme">☾</button>
-    </div>
   </header>
 
   <main>
-    <section class="hero shell">
-      <div class="hero-copy">
-        <div class="eyebrow"><span class="live-dot"></span><span id="heroStatus">Connecting to Fuelo.eu</span></div>
-        <h1>Europe’s fuel prices, mapped in real time.</h1>
-        <p>Compare petrol, diesel and LPG prices across Europe with a clean animated map, real country flags, and live currency conversion. Dark mode is the default.</p>
-        <div class="hero-controls" aria-label="Fuel and currency controls">
-          <div class="control-card">
-            <label for="fuelSelect">Fuel type</label>
-            <select id="fuelSelect">
-              <option value="gasoline95">Gasoline 95</option>
-              <option value="diesel">Diesel</option>
-              <option value="lpg">LPG</option>
-            </select>
-          </div>
-          <div class="control-card">
-            <label for="currencySelect">Currency</label>
-            <select id="currencySelect">
-              <option value="EUR" selected>EUR — Euro</option>
-              <option value="USD">USD — US Dollar</option>
-              <option value="GBP">GBP — Pound Sterling</option>
-              <option value="CHF">CHF — Swiss Franc</option>
-              <option value="NOK">NOK — Norwegian Krone</option>
-              <option value="SEK">SEK — Swedish Krona</option>
-              <option value="DKK">DKK — Danish Krone</option>
-              <option value="PLN">PLN — Polish Zloty</option>
-              <option value="CZK">CZK — Czech Koruna</option>
-              <option value="HUF">HUF — Hungarian Forint</option>
-              <option value="RON">RON — Romanian Leu</option>
-              <option value="BGN">BGN — Bulgarian Lev</option>
-              <option value="TRY">TRY — Turkish Lira</option>
-              <option value="RSD">RSD — Serbian Dinar</option>
-              <option value="ISK">ISK — Icelandic Krona</option>
-            </select>
-          </div>
-          <a class="primary-btn" href="#map">Explore the map</a>
-        </div>
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Europe fuel prices</p>
+        <h1 id="page-title">Clean fuel-price comparison across Europe.</h1>
+        <p class="subhead">Interactive country outlines, live Fuelo fetching, real flag images and current exchange-rate conversion.</p>
       </div>
-
-      <aside class="hero-panel" aria-label="Summary statistics">
-        <div class="panel-header">
-          <span>Live overview</span>
-          <strong id="activeFuelLabel">Gasoline 95</strong>
-        </div>
-        <div class="stats-grid">
-          <article class="stat-card">
-            <span>Average</span>
-            <strong id="avgPrice">—</strong>
-            <small>per litre</small>
-          </article>
-          <article class="stat-card">
-            <span>Cheapest</span>
-            <strong id="cheapestPrice">—</strong>
-            <small id="cheapestCountry">—</small>
-          </article>
-          <article class="stat-card">
-            <span>Highest</span>
-            <strong id="highestPrice">—</strong>
-            <small id="highestCountry">—</small>
-          </article>
-          <article class="stat-card">
-            <span>Countries</span>
-            <strong id="countryCount">—</strong>
-            <small>loaded</small>
-          </article>
-        </div>
-        <div class="mini-ranking" id="miniRanking" aria-label="Cheapest countries preview"></div>
-      </aside>
+      <div class="meta-block" id="sourceMeta">Loading live data…</div>
     </section>
 
-    <section class="map-section shell" id="map">
-      <div class="section-heading">
+    <section class="toolbar" aria-label="Controls">
+      <div class="segmented" role="tablist" aria-label="Fuel type">
+        <button class="is-active" data-fuel="gasoline95" role="tab" aria-selected="true">Gasoline 95</button>
+        <button data-fuel="diesel" role="tab" aria-selected="false">Diesel</button>
+        <button data-fuel="lpg" role="tab" aria-selected="false">LPG</button>
+      </div>
+      <div class="toolbar-actions">
+        <label>
+          <span>Currency</span>
+          <select id="currencySelect" aria-label="Currency">
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+            <option value="GBP">GBP</option>
+            <option value="CHF">CHF</option>
+            <option value="NOK">NOK</option>
+            <option value="SEK">SEK</option>
+            <option value="DKK">DKK</option>
+            <option value="PLN">PLN</option>
+            <option value="CZK">CZK</option>
+            <option value="HUF">HUF</option>
+            <option value="RON">RON</option>
+            <option value="BGN">BGN</option>
+            <option value="TRY">TRY</option>
+            <option value="RSD">RSD</option>
+            <option value="ISK">ISK</option>
+          </select>
+        </label>
+        <button id="refreshBtn" type="button">Refresh</button>
+      </div>
+    </section>
+
+    <section class="map-section" id="map" aria-label="Interactive Europe fuel map">
+      <div class="map-header">
         <div>
-          <span class="kicker">Interactive Europe map</span>
-          <h2>Hover a country marker</h2>
+          <h2>Europe map</h2>
+          <p>Hover or click a country to compare fuel prices.</p>
         </div>
-        <p>Markers are positioned locally, so the map renders on Vercel without any external map library or CDN dependency.</p>
+        <div class="legend" aria-label="Map legend">
+          <span>Lower</span>
+          <i></i><i></i><i></i><i></i><i></i>
+          <span>Higher</span>
+        </div>
       </div>
 
-      <div class="map-layout">
-        <div class="map-card">
-          <div class="map-toolbar">
-            <div class="segmented" role="tablist" aria-label="Fuel type tabs">
-              <button data-fuel-tab="gasoline95" class="is-active" type="button">Gasoline</button>
-              <button data-fuel-tab="diesel" type="button">Diesel</button>
-              <button data-fuel-tab="lpg" type="button">LPG</button>
-            </div>
-            <div class="map-legend" aria-label="Price legend">
-              <span>Lower</span><span class="legend-bar"></span><span>Higher</span>
-            </div>
-          </div>
-
-          <div class="europe-map-wrap">
-            <svg id="europeMap" class="europe-map" viewBox="0 0 1000 700" role="img" aria-labelledby="mapTitle mapDesc">
-              <title id="mapTitle">Animated map of European fuel prices</title>
-              <desc id="mapDesc">A stylized map of Europe with interactive country price markers.</desc>
-              <defs>
-                <radialGradient id="seaGlow" cx="50%" cy="38%" r="65%">
-                  <stop offset="0" stop-color="rgba(56,189,248,.18)" />
-                  <stop offset="1" stop-color="rgba(56,189,248,0)" />
-                </radialGradient>
-                <linearGradient id="landGradient" x1="0" x2="1" y1="0" y2="1">
-                  <stop stop-color="rgba(148,163,184,.23)" />
-                  <stop offset="1" stop-color="rgba(30,41,59,.35)" />
-                </linearGradient>
-                <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
-                  <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity=".35"/>
-                </filter>
-              </defs>
-
-              <rect x="0" y="0" width="1000" height="700" rx="28" class="map-sea" />
-              <rect x="0" y="0" width="1000" height="700" rx="28" fill="url(#seaGlow)" />
-
-              <g class="grid-lines" opacity=".35">
-                <path d="M120 80H920M95 190H930M70 300H935M95 410H900M150 520H835M245 620H760" />
-                <path d="M135 70V620M260 60V640M385 55V650M510 65V645M635 70V628M760 92V590M885 145V510" />
-              </g>
-
-              <g class="land" filter="url(#softShadow)">
-                <path class="landmass" d="M401 123c58-29 116-32 175-2 47 24 101 48 164 43 51-4 88 20 106 64 25 62-4 111-58 148-33 23-36 58-20 96 20 48-4 82-52 97-61 18-109-4-162-32-51-28-94-17-137 17-62 48-132 28-154-43-12-39-2-73 27-101 39-38 48-74 11-113-47-50-31-128 100-174Z" />
-                <path class="landmass" d="M163 367c25-51 84-76 138-55 41 16 59 55 46 94-16 48-67 76-119 64-49-12-89-55-65-103Z" />
-                <path class="landmass" d="M454 64c77-50 181-38 229 29 25 34 10 68-32 74-89 13-176-14-224-67-10-11 5-22 27-36Z" />
-                <path class="landmass" d="M282 188c35-39 83-43 115-9 27 29 20 71-16 95-42 29-97 18-119-23-10-20-2-41 20-63Z" />
-                <path class="landmass" d="M217 186c19-21 49-23 67-3 17 19 13 49-10 66-25 19-60 15-75-9-10-17-4-37 18-54Z" />
-                <path class="landmass" d="M79 90c42-31 101-21 122 24 15 33-4 68-47 83-44 15-93 0-112-35-14-26 0-54 37-72Z" />
-                <path class="landmass" d="M736 536c47-30 120-26 162 10 35 30 24 70-23 84-61 18-132-3-157-45-10-18-3-35 18-49Z" />
-                <path class="landmass" d="M833 458c26-18 62-16 84 4 21 19 15 44-13 56-34 15-73 6-88-20-8-15-3-28 17-40Z" />
-              </g>
-
-              <g id="markerLayer" class="marker-layer"></g>
-            </svg>
-            <div class="map-tooltip" id="mapTooltip" role="status" aria-live="polite"></div>
-          </div>
+      <div class="map-grid">
+        <div class="map-panel">
+          <svg id="europeSvg" viewBox="0 0 1000 760" role="img" aria-label="Europe map with country borders">
+            <rect class="sea" x="0" y="0" width="1000" height="760"></rect>
+            <g id="countryLayer"></g>
+            <g id="microLayer"></g>
+          </svg>
+          <div id="mapTooltip" class="tooltip" role="status" aria-live="polite"></div>
         </div>
 
-        <aside class="focus-card" id="focusCard">
-          <span class="kicker">Selected country</span>
-          <div class="focus-head">
-            <img id="focusFlag" src="" alt="" loading="lazy" />
-            <div>
-              <h3 id="focusCountry">Hover the map</h3>
-              <p id="focusMeta">Move your mouse over a marker or choose a country below.</p>
-            </div>
-          </div>
-          <div class="focus-prices">
-            <div><span>Gasoline 95</span><strong id="focusGasoline">—</strong></div>
-            <div><span>Diesel</span><strong id="focusDiesel">—</strong></div>
-            <div><span>LPG</span><strong id="focusLpg">—</strong></div>
-          </div>
-          <div class="source-box">
-            <strong id="sourceStatus">Loading live data…</strong>
-            <p id="sourceDetail">The Vercel API route is requesting Fuelo.eu server-side, then the browser renders the map.</p>
-          </div>
+        <aside class="details-panel" aria-label="Selected country details">
+          <p class="panel-label">Selected country</p>
+          <div id="countryDetails" class="country-details empty">Hover the map.</div>
         </aside>
       </div>
     </section>
 
-    <section class="countries-section shell" id="countries">
-      <div class="section-heading">
+    <section class="stats" aria-label="Summary statistics">
+      <article>
+        <span>Lowest</span>
+        <strong id="lowestStat">—</strong>
+        <small id="lowestCountry">—</small>
+      </article>
+      <article>
+        <span>Average</span>
+        <strong id="averageStat">—</strong>
+        <small>Displayed countries</small>
+      </article>
+      <article>
+        <span>Highest</span>
+        <strong id="highestStat">—</strong>
+        <small id="highestCountry">—</small>
+      </article>
+    </section>
+
+    <section class="table-section" id="table" aria-label="Country fuel price table">
+      <div class="section-title-row">
         <div>
-          <span class="kicker">Country table</span>
-          <h2>Search, sort, compare</h2>
+          <p class="eyebrow">Country table</p>
+          <h2>Search, sort, compare.</h2>
         </div>
-        <div class="search-box">
-          <input id="countrySearch" type="search" placeholder="Search country…" autocomplete="off" />
-        </div>
+        <input id="searchInput" type="search" placeholder="Search country" aria-label="Search country" />
       </div>
-      <div class="table-card">
-        <div class="table-head">
-          <button data-sort="name" type="button">Country</button>
-          <button data-sort="gasoline95" type="button">Gasoline 95</button>
-          <button data-sort="diesel" type="button">Diesel</button>
-          <button data-sort="lpg" type="button">LPG</button>
-        </div>
-        <div id="countryRows" class="country-rows"></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col" data-sort="name">Country</th>
+              <th scope="col" data-sort="gasoline95">Gasoline 95</th>
+              <th scope="col" data-sort="diesel">Diesel</th>
+              <th scope="col" data-sort="lpg">LPG</th>
+            </tr>
+          </thead>
+          <tbody id="priceTableBody"></tbody>
+        </table>
       </div>
     </section>
 
-    <section class="data-section shell" id="data">
-      <div class="data-card">
-        <div>
-          <span class="kicker">How it works</span>
-          <h2>Built for Vercel</h2>
-          <p>This version does not need a custom local Node server, D3 CDN, TopoJSON CDN, or browser-side scraping. The page is static, while Fuelo and currency requests go through Vercel serverless functions in the <code>/api</code> folder.</p>
-        </div>
-        <ul class="feature-list">
-          <li><strong>/api/fuelo</strong><span>Fetches Fuelo.eu in EUR and parses the country fuel table server-side.</span></li>
-          <li><strong>/api/rates</strong><span>Fetches current exchange rates with EUR as the base currency.</span></li>
-          <li><strong>Local SVG map</strong><span>No map CDN dependency, so the map always appears after GitHub → Vercel deploy.</span></li>
-          <li><strong>FlagDownload flags</strong><span>Country flags are loaded as real PNG images from flagdownload.com.</span></li>
-        </ul>
-      </div>
+    <section class="source" id="source">
+      <h2>Source</h2>
+      <p>
+        Price data is requested in EUR from Fuelo through the serverless API route <code>/api/fuelo</code>. Currency conversion uses the serverless route <code>/api/rates</code>. Flags try FlagDownload first and fall back to another public flag image source only when hotlinking fails.
+      </p>
+      <p id="technicalStatus">Waiting for data…</p>
     </section>
   </main>
 
-  <footer class="footer shell">
-    <span>EuroFuel Atlas</span>
-    <span>Fuel source: Fuelo.eu · FX source: Frankfurter · Flags: FlagDownload</span>
-  </footer>
-
-  <script src="/app.js" defer></script>
+  <script src="/assets/europe-map.js"></script>
+  <script src="/assets/countries.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>

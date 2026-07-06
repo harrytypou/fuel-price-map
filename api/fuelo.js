@@ -1,244 +1,176 @@
-const COUNTRY_ALIASES = new Map(Object.entries({
-  "albania": "Albania",
-  "andorra": "Andorra",
-  "austria": "Austria",
-  "belarus": "Belarus",
-  "belgium": "Belgium",
-  "bosnia and herzegovina": "Bosnia and Herzegovina",
-  "bosnia": "Bosnia and Herzegovina",
-  "bulgaria": "Bulgaria",
-  "croatia": "Croatia",
-  "cyprus": "Cyprus",
-  "czechia": "Czechia",
-  "czech republic": "Czechia",
-  "denmark": "Denmark",
-  "estonia": "Estonia",
-  "finland": "Finland",
-  "france": "France",
-  "germany": "Germany",
-  "greece": "Greece",
-  "hungary": "Hungary",
-  "iceland": "Iceland",
-  "ireland": "Ireland",
-  "italy": "Italy",
-  "kosovo": "Kosovo",
-  "latvia": "Latvia",
-  "liechtenstein": "Liechtenstein",
-  "lithuania": "Lithuania",
-  "luxembourg": "Luxembourg",
-  "malta": "Malta",
-  "moldova": "Moldova",
-  "monaco": "Monaco",
-  "montenegro": "Montenegro",
-  "netherlands": "Netherlands",
-  "north macedonia": "North Macedonia",
-  "macedonia": "North Macedonia",
-  "norway": "Norway",
-  "poland": "Poland",
-  "portugal": "Portugal",
-  "romania": "Romania",
-  "russia": "Russia",
-  "san marino": "San Marino",
-  "serbia": "Serbia",
-  "slovakia": "Slovakia",
-  "slovenia": "Slovenia",
-  "spain": "Spain",
-  "sweden": "Sweden",
-  "switzerland": "Switzerland",
-  "turkey": "Turkey",
-  "turkiye": "Turkey",
-  "ukraine": "Ukraine",
-  "united kingdom": "United Kingdom",
-  "great britain": "United Kingdom",
-  "uk": "United Kingdom",
-  "vatican city": "Vatican City"
-}));
+const FALLBACK = [
+  ['Albania','AL',1.74,1.71,0.74], ['Andorra','AD',1.43,1.35,0.79], ['Armenia','AM',1.31,1.41,0.77],
+  ['Austria','AT',1.61,1.64,1.02], ['Azerbaijan','AZ',0.97,0.65,0.44], ['Belarus','BY',0.81,0.81,0.43],
+  ['Belgium','BE',1.70,1.74,0.70], ['Bosnia and Herzegovina','BA',1.41,1.42,0.75], ['Bulgaria','BG',1.32,1.34,0.67],
+  ['Croatia','HR',1.49,1.40,0.78], ['Cyprus','CY',1.43,1.52,0.96], ['Czechia','CZ',1.49,1.45,0.67],
+  ['Denmark','DK',1.90,1.70,1.15], ['Estonia','EE',1.69,1.55,0.75], ['Finland','FI',1.84,1.69,1.04],
+  ['France','FR',1.72,1.63,0.99], ['Georgia','GE',1.16,1.21,0.72], ['Germany','DE',1.79,1.68,1.10],
+  ['Greece','GR',1.83,1.58,0.89], ['Hungary','HU',1.51,1.52,0.86], ['Iceland','IS',2.05,2.02,1.35],
+  ['Ireland','IE',1.72,1.66,1.03], ['Italy','IT',1.83,1.72,0.74], ['Kosovo','XK',1.39,1.38,0.70],
+  ['Latvia','LV',1.63,1.55,0.76], ['Liechtenstein','LI',1.84,1.90,1.05], ['Lithuania','LT',1.51,1.48,0.72],
+  ['Luxembourg','LU',1.47,1.43,0.76], ['Malta','MT',1.34,1.21,0.70], ['Moldova','MD',1.31,1.18,0.68],
+  ['Monaco','MC',1.93,1.86,1.05], ['Montenegro','ME',1.52,1.42,0.79], ['Netherlands','NL',2.01,1.79,0.95],
+  ['North Macedonia','MK',1.33,1.25,0.69], ['Norway','NO',1.95,1.82,1.21], ['Poland','PL',1.45,1.48,0.72],
+  ['Portugal','PT',1.71,1.56,0.88], ['Romania','RO',1.43,1.46,0.75], ['Russia','RU',0.62,0.74,0.34],
+  ['San Marino','SM',1.77,1.66,0.82], ['Serbia','RS',1.55,1.64,0.82], ['Slovakia','SK',1.55,1.48,0.77],
+  ['Slovenia','SI',1.48,1.50,0.84], ['Spain','ES',1.55,1.46,0.92], ['Sweden','SE',1.64,1.75,1.15],
+  ['Switzerland','CH',1.82,1.94,1.12], ['Turkey','TR',1.28,1.24,0.66], ['Ukraine','UA',1.31,1.28,0.71],
+  ['United Kingdom','GB',1.70,1.78,1.02], ['Vatican City','VA',1.84,1.73,0.76]
+].map(([name, iso, gasoline95, diesel, lpg]) => ({ name, iso, prices: { gasoline95, diesel, lpg } }));
 
-function normalize(text) {
-  return String(text || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/gi, " ")
-    .trim()
-    .toLowerCase();
-}
+const COUNTRIES = [
+  'Albania','Andorra','Armenia','Austria','Azerbaijan','Belarus','Belgium','Bosnia and Herzegovina','Bulgaria','Croatia','Cyprus','Czechia','Czech Republic','Denmark','Estonia','Finland','France','Georgia','Germany','Greece','Hungary','Iceland','Ireland','Italy','Kosovo','Latvia','Liechtenstein','Lithuania','Luxembourg','Malta','Moldova','Monaco','Montenegro','Netherlands','North Macedonia','Macedonia','Norway','Poland','Portugal','Romania','Russia','San Marino','Serbia','Slovakia','Slovenia','Spain','Sweden','Switzerland','Turkey','Türkiye','Ukraine','United Kingdom','Great Britain','Vatican City','Vatican'
+];
+
+const ISO = {
+  Albania:'AL', Andorra:'AD', Armenia:'AM', Austria:'AT', Azerbaijan:'AZ', Belarus:'BY', Belgium:'BE',
+  'Bosnia and Herzegovina':'BA', Bulgaria:'BG', Croatia:'HR', Cyprus:'CY', Czechia:'CZ', 'Czech Republic':'CZ', Denmark:'DK', Estonia:'EE', Finland:'FI', France:'FR', Georgia:'GE', Germany:'DE', Greece:'GR', Hungary:'HU', Iceland:'IS', Ireland:'IE', Italy:'IT', Kosovo:'XK', Latvia:'LV', Liechtenstein:'LI', Lithuania:'LT', Luxembourg:'LU', Malta:'MT', Moldova:'MD', Monaco:'MC', Montenegro:'ME', Netherlands:'NL', 'North Macedonia':'MK', Macedonia:'MK', Norway:'NO', Poland:'PL', Portugal:'PT', Romania:'RO', Russia:'RU', 'San Marino':'SM', Serbia:'RS', Slovakia:'SK', Slovenia:'SI', Spain:'ES', Sweden:'SE', Switzerland:'CH', Turkey:'TR', Türkiye:'TR', Ukraine:'UA', 'United Kingdom':'GB', 'Great Britain':'GB', 'Vatican City':'VA', Vatican:'VA'
+};
 
 function decodeEntities(text) {
-  return String(text || "")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/&euro;/gi, "€");
+  return String(text || '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&euro;|&#8364;/g, '€')
+    .replace(/&#x27;|&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/<br\s*\/?>/gi, ' ');
 }
 
-function stripHtml(html) {
-  return decodeEntities(String(html || "")
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim());
+function cleanHtml(html) {
+  return decodeEntities(html)
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<svg[\s\S]*?<\/svg>/gi, ' ');
 }
 
-function parsePrice(text) {
-  const match = String(text || "").match(/\b\d{1,2}(?:[,.]\d{2,4})\b/);
-  if (!match) return null;
-  const value = Number(match[0].replace(",", "."));
-  if (!Number.isFinite(value) || value < 0.1 || value > 4.5) return null;
-  return Math.round(value * 1000) / 1000;
+function numberFromToken(token) {
+  const value = Number(String(token).replace(/[^0-9,.-]/g, '').replace(',', '.'));
+  return Number.isFinite(value) ? value : null;
 }
 
-function parsePricesFromText(text) {
-  const matches = [...String(text || "").matchAll(/\b\d{1,2}(?:[,.]\d{2,4})\b/g)]
-    .map((match) => Number(match[0].replace(",", ".")))
-    .filter((value) => Number.isFinite(value) && value > 0.1 && value < 4.5);
+function parseRows(html) {
+  const cleaned = cleanHtml(html);
+  const rowMatches = cleaned.match(/<tr[\s\S]*?<\/tr>/gi) || [];
+  const out = [];
 
-  // Fuelo rows may include daily/weekly deltas after the three fuel prices.
-  // The first three valid litre-sized values are gasoline 95, diesel, and LPG.
-  return matches.slice(0, 3).map((value) => Math.round(value * 1000) / 1000);
-}
+  for (const rowHtml of rowMatches) {
+    const text = rowHtml
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!text || /Gasoline|Diesel|LPG|Price/i.test(text) && !COUNTRIES.some((c) => text.includes(c))) continue;
 
-function detectCountry(text) {
-  const normal = normalize(text);
-  const aliases = [...COUNTRY_ALIASES.keys()].sort((a, b) => b.length - a.length);
-  const exact = COUNTRY_ALIASES.get(normal);
-  if (exact) return exact;
-  for (const alias of aliases) {
-    if (normal.startsWith(`${alias} `) || normal.includes(` ${alias} `) || normal.endsWith(` ${alias}`)) {
-      return COUNTRY_ALIASES.get(alias);
-    }
-  }
-  return null;
-}
-
-function parseTableRows(html) {
-  const rows = [];
-  const rowRegex = /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
-  let rowMatch;
-  while ((rowMatch = rowRegex.exec(html))) {
-    const rowHtml = rowMatch[1];
-    const cells = [];
-    const cellRegex = /<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi;
-    let cellMatch;
-    while ((cellMatch = cellRegex.exec(rowHtml))) {
-      cells.push(stripHtml(cellMatch[1]));
-    }
-
-    if (cells.length < 2) continue;
-    const rowText = cells.join(" ");
-    const country = detectCountry(cells[0]) || detectCountry(rowText);
+    const country = COUNTRIES.find((name) => new RegExp(`(^|\\s)${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s|$)`, 'i').test(text));
     if (!country) continue;
 
-    const candidateCells = cells.slice(1);
-    const cellPrices = candidateCells.map(parsePrice).filter((value) => value !== null);
-    const prices = cellPrices.length >= 3 ? cellPrices.slice(0, 3) : parsePricesFromText(rowText);
-    if (prices.length < 2) continue;
+    let money = [];
+    const eurAfter = [...text.matchAll(/€\s*([0-9]+(?:[,.][0-9]{1,3})?)/g)].map((m) => m[1]);
+    const eurBefore = [...text.matchAll(/([0-9]+(?:[,.][0-9]{1,3})?)\s*€/g)].map((m) => m[1]);
+    money = [...eurAfter, ...eurBefore].map(numberFromToken).filter((n) => Number.isFinite(n) && n > 0 && n < 5);
 
-    rows.push({
-      name: country,
-      gasoline95: prices[0] ?? null,
-      diesel: prices[1] ?? null,
-      lpg: prices[2] ?? null
-    });
-  }
-  return rows;
-}
+    if (money.length < 2) {
+      const tokens = [...text.matchAll(/(?<![+\-])\b[0-9]+[,.][0-9]{2,3}\b/g)]
+        .map((m) => numberFromToken(m[0]))
+        .filter((n) => Number.isFinite(n) && n > 0 && n < 5);
+      money = tokens;
+    }
 
-function parseLooseText(html) {
-  const text = stripHtml(html);
-  const countries = [...new Set(COUNTRY_ALIASES.values())];
-  const rows = [];
+    // Fuelo Europe rows usually contain price + change columns for each fuel.
+    // The actual prices are the first, fifth and ninth numeric tokens when change columns are present.
+    let gasoline95 = money[0];
+    let diesel = money.length >= 9 ? money[4] : money[1];
+    let lpg = money.length >= 9 ? money[8] : money[2];
 
-  for (const country of countries) {
-    const aliases = [...COUNTRY_ALIASES.entries()]
-      .filter(([, canonical]) => canonical === country)
-      .map(([alias]) => alias);
-
-    const countryPattern = aliases
-      .sort((a, b) => b.length - a.length)
-      .map((alias) => alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-      .join("|");
-
-    const regex = new RegExp(`(?:${countryPattern})\\s+(.{0,120})`, "i");
-    const match = normalize(text).match(regex);
-    if (!match) continue;
-
-    const prices = parsePricesFromText(match[1]);
-    if (prices.length >= 2) {
-      rows.push({
-        name: country,
-        gasoline95: prices[0] ?? null,
-        diesel: prices[1] ?? null,
-        lpg: prices[2] ?? null
-      });
+    if (Number.isFinite(gasoline95) && Number.isFinite(diesel)) {
+      out.push({ name: country, iso: ISO[country] || '', prices: { gasoline95, diesel, lpg: Number.isFinite(lpg) ? lpg : null } });
     }
   }
 
-  return rows;
+  const deduped = new Map();
+  out.forEach((item) => {
+    const iso = item.iso || item.name;
+    if (!deduped.has(iso)) deduped.set(iso, item);
+  });
+  return [...deduped.values()];
 }
 
-function dedupeRows(rows) {
-  const map = new Map();
-  for (const row of rows) {
-    const previous = map.get(row.name);
-    if (!previous || Object.values(row).filter((value) => typeof value === "number").length > Object.values(previous).filter((value) => typeof value === "number").length) {
-      map.set(row.name, row);
+function parseLoose(html) {
+  const text = cleanHtml(html).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  const out = [];
+  for (const country of COUNTRIES) {
+    const idx = text.search(new RegExp(`\\b${country.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'));
+    if (idx < 0) continue;
+    const slice = text.slice(idx, idx + 260);
+    const values = [...slice.matchAll(/€\s*([0-9]+(?:[,.][0-9]{1,3})?)|([0-9]+(?:[,.][0-9]{1,3})?)\s*€/g)]
+      .map((m) => numberFromToken(m[1] || m[2]))
+      .filter((n) => Number.isFinite(n) && n > 0 && n < 5);
+    if (values.length >= 2) {
+      out.push({ name: country, iso: ISO[country] || '', prices: { gasoline95: values[0], diesel: values[1], lpg: values[2] ?? null } });
     }
   }
-  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  const deduped = new Map();
+  out.forEach((item) => { if (!deduped.has(item.iso || item.name)) deduped.set(item.iso || item.name, item); });
+  return [...deduped.values()];
 }
 
-function parseFuelo(html) {
-  const tableRows = parseTableRows(html);
-  const looseRows = tableRows.length >= 10 ? [] : parseLooseText(html);
-  return dedupeRows([...tableRows, ...looseRows]);
+async function fetchText(url) {
+  const upstream = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Cache-Control': 'no-cache'
+    }
+  });
+  if (!upstream.ok) throw new Error(`${url} returned ${upstream.status}`);
+  return upstream.text();
 }
 
-module.exports = async function handler(req, res) {
-  if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
-    return res.status(405).json({ ok: false, error: "Method not allowed" });
-  }
+function todayOffset(days = 0) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
 
-  const upstreamUrl = "https://fuelo.eu/?convertto=eur";
+export default async function handler(request, response) {
+  response.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=86400');
+  const candidates = [
+    'https://fuelo.eu/?convertto=eur',
+    'https://fuelo.eu/',
+    `https://gr.fuelo.net/world/prices/${todayOffset(0)}?lang=en`,
+    `https://gr.fuelo.net/world/prices/${todayOffset(-1)}?lang=en`,
+    `https://gr.fuelo.net/world/prices/${todayOffset(-2)}?lang=en`
+  ];
 
-  try {
-    const upstream = await fetch(upstreamUrl, {
-      headers: {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Cache-Control": "no-cache",
-        "User-Agent": "Mozilla/5.0 (compatible; EuroFuelAtlas/2.0; +https://vercel.com/)"
+  const errors = [];
+  for (const url of candidates) {
+    try {
+      const html = await fetchText(url);
+      let items = parseRows(html);
+      if (items.length < 15) items = parseLoose(html);
+      if (items.length >= 15) {
+        response.status(200).json({
+          status: 'live',
+          sourceUrl: url,
+          updatedAt: new Date().toISOString(),
+          count: items.length,
+          items
+        });
+        return;
       }
-    });
-
-    if (!upstream.ok) {
-      throw new Error(`Fuelo returned HTTP ${upstream.status}`);
+      errors.push(`${url}: parsed ${items.length}`);
+    } catch (error) {
+      errors.push(error.message);
     }
-
-    const html = await upstream.text();
-    const countries = parseFuelo(html);
-
-    if (countries.length < 5) {
-      throw new Error("Could not parse enough country rows from Fuelo. Their HTML may have changed.");
-    }
-
-    return res.status(200).json({
-      ok: true,
-      source: "fuelo.eu",
-      currency: "EUR",
-      fetchedAt: new Date().toISOString(),
-      countryCount: countries.length,
-      countries
-    });
-  } catch (error) {
-    return res.status(502).json({
-      ok: false,
-      source: "fuelo.eu",
-      error: error.message,
-      hint: "Fuelo may be temporarily blocking the serverless function or may have changed its table markup. The frontend will continue with fallback values."
-    });
   }
-};
+
+  response.status(200).json({
+    status: 'fallback',
+    sourceUrl: 'https://fuelo.eu/',
+    updatedAt: new Date().toISOString(),
+    count: FALLBACK.length,
+    errors,
+    items: FALLBACK
+  });
+}
