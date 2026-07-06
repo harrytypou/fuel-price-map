@@ -124,19 +124,20 @@ function colorFor(value, min, max) {
 
 function renderMap() {
   const mapData = window.EUROPE_MAP;
+  const markerOnlyCountries = new Set(Object.keys(mapData.markers || {}));
   const { min, max } = priceRange();
   landLayer.innerHTML = "";
   countryLayer.innerHTML = "";
   microLayer.innerHTML = "";
 
-  mapData.countries.forEach((feature) => {
+  mapData.countries.filter((feature) => !markerOnlyCountries.has(feature.iso)).forEach((feature) => {
     const base = document.createElementNS("http://www.w3.org/2000/svg", "path");
     base.setAttribute("d", feature.d);
     base.classList.add("land-path");
     landLayer.appendChild(base);
   });
 
-  mapData.countries.forEach((feature) => {
+  mapData.countries.filter((feature) => !markerOnlyCountries.has(feature.iso)).forEach((feature) => {
     const country = byIso(feature.iso);
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", feature.d);
@@ -144,6 +145,7 @@ function renderMap() {
     path.classList.add("country-path");
     path.setAttribute("aria-label", country ? country.name : feature.name);
     path.setAttribute("focusable", "false");
+    path.setAttribute("tabindex", "-1");
 
     const value = country ? converted(country) : null;
     path.style.fill = colorFor(value, min, max);
@@ -160,6 +162,7 @@ function renderMap() {
     const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
     group.dataset.iso = iso;
     group.setAttribute("focusable", "false");
+    group.setAttribute("tabindex", "-1");
     group.setAttribute("aria-label", country.name);
 
     const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -183,6 +186,8 @@ function renderMap() {
 }
 
 function bindRegionEvents(el, iso) {
+  el.addEventListener("pointerdown", (event) => event.preventDefault());
+  el.addEventListener("mousedown", (event) => event.preventDefault());
   el.addEventListener("mouseenter", (event) => showCountry(iso, event));
   el.addEventListener("mousemove", moveTooltip);
   el.addEventListener("mouseleave", hideTooltip);
@@ -443,9 +448,16 @@ function setupControls() {
   });
 
   $("refreshBtn").addEventListener("click", async () => {
+    const btn = $("refreshBtn");
+    btn.classList.add("is-loading");
+    btn.textContent = "Refreshing";
+    document.body.classList.add("is-fetching");
     sourceMeta.textContent = "Refreshing live data…";
     await Promise.all([loadFuelPrices(), loadRates()]);
     renderAll();
+    document.body.classList.remove("is-fetching");
+    btn.classList.remove("is-loading");
+    btn.textContent = "Refresh";
   });
 
   document.querySelectorAll("th[data-sort]").forEach((th) => {
@@ -464,8 +476,14 @@ function setupControls() {
 async function init() {
   setupControls();
   renderAll();
+  requestAnimationFrame(() => {
+    document.body.classList.remove("is-loading");
+    document.body.classList.add("is-ready");
+  });
+  document.body.classList.add("is-fetching");
   await Promise.all([loadFuelPrices(), loadRates()]);
   renderAll();
+  document.body.classList.remove("is-fetching");
 }
 
 init();

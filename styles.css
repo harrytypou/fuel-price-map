@@ -23,6 +23,119 @@ body {
   letter-spacing: -0.01em;
 }
 
+
+::selection { background: #f2f2f2; color: #050505; }
+
+@keyframes pageReveal {
+  from { opacity: 0; transform: translateY(18px); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes lineGrow {
+  from { transform: scaleX(0); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+@keyframes mapFadeIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.992); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes countryIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.994); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes dotIn {
+  from { opacity: 0; transform: scale(0.2); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes rowIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dataPulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+@keyframes loaderSweep {
+  0% { transform: translateX(-115%); }
+  100% { transform: translateX(115%); }
+}
+
+.site-header,
+.hero-copy,
+.meta-block,
+.toolbar,
+.map-section,
+.stats,
+.table-section,
+.source {
+  opacity: 0;
+  will-change: opacity, transform, filter;
+}
+
+body.is-ready .site-header { animation: pageReveal 560ms cubic-bezier(.2,.8,.2,1) 40ms forwards; }
+body.is-ready .hero-copy { animation: pageReveal 620ms cubic-bezier(.2,.8,.2,1) 120ms forwards; }
+body.is-ready .meta-block { animation: pageReveal 620ms cubic-bezier(.2,.8,.2,1) 220ms forwards; }
+body.is-ready .toolbar { animation: pageReveal 560ms cubic-bezier(.2,.8,.2,1) 300ms forwards; }
+body.is-ready .map-section { animation: pageReveal 680ms cubic-bezier(.2,.8,.2,1) 390ms forwards; }
+body.is-ready .stats { animation: pageReveal 560ms cubic-bezier(.2,.8,.2,1) 520ms forwards; }
+body.is-ready .table-section { animation: pageReveal 620ms cubic-bezier(.2,.8,.2,1) 610ms forwards; }
+body.is-ready .source { animation: pageReveal 560ms cubic-bezier(.2,.8,.2,1) 700ms forwards; }
+
+.map-section::before,
+.table-section::before,
+.source::before {
+  content: "";
+  display: block;
+  height: 1px;
+  margin-top: -25px;
+  background: var(--line-strong);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+body.is-ready .map-section::before,
+body.is-ready .table-section::before,
+body.is-ready .source::before {
+  animation: lineGrow 680ms cubic-bezier(.2,.8,.2,1) 340ms forwards;
+}
+
+.map-panel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 46%;
+  height: 1px;
+  background: #f2f2f2;
+  opacity: 0;
+  pointer-events: none;
+}
+body.is-fetching .map-panel::after {
+  opacity: 0.9;
+  animation: loaderSweep 1.05s cubic-bezier(.7,0,.3,1) infinite;
+}
+body.is-fetching .meta-block { animation: dataPulse 1.2s ease-in-out infinite; }
+
+body.is-ready .country-path { animation: countryIn 620ms cubic-bezier(.2,.8,.2,1) both; }
+body.is-ready .land-path { animation: mapFadeIn 680ms cubic-bezier(.2,.8,.2,1) both; }
+body.is-ready #microLayer g { animation: dotIn 460ms cubic-bezier(.2,.8,.2,1) both; transform-box: fill-box; transform-origin: center; }
+body.is-ready tbody tr { animation: rowIn 420ms cubic-bezier(.2,.8,.2,1) both; }
+
+tbody tr:nth-child(1) { animation-delay: 0ms; }
+tbody tr:nth-child(2) { animation-delay: 20ms; }
+tbody tr:nth-child(3) { animation-delay: 40ms; }
+tbody tr:nth-child(4) { animation-delay: 60ms; }
+tbody tr:nth-child(5) { animation-delay: 80ms; }
+tbody tr:nth-child(6) { animation-delay: 100ms; }
+tbody tr:nth-child(7) { animation-delay: 120ms; }
+tbody tr:nth-child(8) { animation-delay: 140ms; }
+tbody tr:nth-child(n+9) { animation-delay: 160ms; }
+
 a { color: inherit; text-decoration: none; }
 button, select, input { font: inherit; }
 button, select, input, a { border-radius: 0; }
@@ -218,6 +331,8 @@ select {
   display: block;
   background: var(--sea);
 }
+#europeSvg:focus,
+#europeSvg:focus-visible,
 #europeSvg *:focus,
 #europeSvg *:focus-visible {
   outline: none !important;
@@ -241,7 +356,7 @@ select {
   cursor: pointer;
   transform-box: fill-box;
   transform-origin: center;
-  transition: fill 170ms ease, stroke 170ms ease, stroke-width 170ms ease, opacity 170ms ease, transform 170ms ease;
+  transition: fill 190ms ease, stroke 190ms ease, stroke-width 190ms ease, opacity 190ms ease, transform 190ms ease;
   -webkit-tap-highlight-color: transparent;
 }
 .country-path:hover,
@@ -417,4 +532,38 @@ tbody tr.is-selected { background: #151515; }
   .stats article:last-child { border-bottom: 0; }
   #europeSvg { min-height: 430px; }
   .map-grid { min-height: 430px; }
+}
+
+
+#europeSvg path,
+#europeSvg g,
+#europeSvg circle {
+  outline: none !important;
+}
+
+#refreshBtn.is-loading {
+  color: var(--muted);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .site-header,
+  .hero-copy,
+  .meta-block,
+  .toolbar,
+  .map-section,
+  .stats,
+  .table-section,
+  .source {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+  }
 }

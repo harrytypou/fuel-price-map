@@ -40,3 +40,10 @@ The site references:
 ```
 
 The included file is a clean temporary Fuelio wordmark at 1007×287 px. Replace that file with your final logo using the same filename to keep the site working without code changes.
+
+
+## Latest changes
+
+- Added the supplied `/favicon.ico` for browser tabs and Vercel root serving.
+- Added professional staggered load animations, map reveal animations, row animations, and refresh loading state.
+- Changed Luxembourg to a small-country marker/dot on the map.
