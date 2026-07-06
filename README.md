@@ -47,3 +47,6 @@ The included file is a clean temporary Fuelio wordmark at 1007×287 px. Replace 
 - Added the supplied `/favicon.ico` for browser tabs and Vercel root serving.
 - Added professional staggered load animations, map reveal animations, row animations, and refresh loading state.
 - Changed Luxembourg to a small-country marker/dot on the map.
+- Removed the hero eyebrow/tag above the main headline.
+- Added an `Export PDF` action that prepares a branded Fuelio report with the current map view, report metadata, and a complete country fuel-price table.
+- The PDF export uses the browser's native print/PDF engine, so it works on Vercel without extra build dependencies.

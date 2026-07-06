@@ -518,6 +518,90 @@ async function loadRates() {
   }
 }
 
+
+function getReportRows() {
+  const rows = [...state.countries];
+  rows.sort((a, b) => {
+    if (state.sortKey === "name") {
+      return state.sortDirection === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+    }
+    const av = converted(a, state.sortKey);
+    const bv = converted(b, state.sortKey);
+    const result = (av ?? Infinity) - (bv ?? Infinity);
+    return state.sortDirection === "asc" ? result : -result;
+  });
+  return rows;
+}
+
+function preparePdfReport() {
+  const report = $("pdfReport");
+  if (!report) return;
+
+  const generatedAt = new Date();
+  const priceText = state.priceStatus === "live" ? "Live Fuelo feed" : "Backup dataset";
+  const rateText = state.rateStatus === "live" ? "live exchange rates" : "backup exchange rates";
+  const lastUpdated = state.lastUpdated ? new Date(state.lastUpdated).toLocaleString() : "not available";
+
+  const meta = $("pdfReportMeta");
+  if (meta) {
+    meta.textContent = `Generated ${generatedAt.toLocaleString()} · ${FUEL_LABELS[state.fuel]} layer · Updated ${lastUpdated}`;
+  }
+
+  const currency = $("pdfCurrency");
+  const count = $("pdfCountryCount");
+  const status = $("pdfDataStatus");
+  const caption = $("pdfMapCaption");
+  if (currency) currency.textContent = state.currency;
+  if (count) count.textContent = String(state.countries.length);
+  if (status) status.textContent = `${priceText} · ${rateText}`;
+  if (caption) caption.textContent = `${FUEL_LABELS[state.fuel]} price level by country. Lower prices are darker; higher prices are lighter.`;
+
+  const mapFrame = $("pdfMapFrame");
+  const svg = $("europeSvg");
+  if (mapFrame && svg) {
+    mapFrame.innerHTML = "";
+    const clone = svg.cloneNode(true);
+    clone.removeAttribute("id");
+    clone.classList.add("pdf-map-svg");
+    clone.setAttribute("aria-hidden", "true");
+    clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+    mapFrame.appendChild(clone);
+  }
+
+  const tbody = $("pdfTableBody");
+  if (tbody) {
+    tbody.innerHTML = "";
+    getReportRows().forEach((country) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${country.name}</td>
+        <td>${country.iso}</td>
+        <td>${perLitre(converted(country, "gasoline95"))}</td>
+        <td>${perLitre(converted(country, "diesel"))}</td>
+        <td>${perLitre(converted(country, "lpg"))}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+}
+
+function exportPdfReport() {
+  preparePdfReport();
+  previousDocumentTitle = document.title;
+  const date = new Date().toISOString().slice(0, 10);
+  document.title = `Fuelio fuel price report ${date}`;
+  document.body.classList.add("is-exporting-pdf");
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => window.print());
+  });
+}
+
+window.addEventListener("beforeprint", preparePdfReport);
+window.addEventListener("afterprint", () => {
+  document.body.classList.remove("is-exporting-pdf");
+  document.title = previousDocumentTitle || "Fuelio — Europe fuel prices";
+});
+
 function setupControls() {
   document.querySelectorAll("[data-fuel]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -553,6 +637,11 @@ function setupControls() {
     btn.classList.remove("is-loading");
     btn.textContent = "Refresh";
   });
+
+  const exportBtn = $("exportPdfBtn");
+  if (exportBtn) {
+    exportBtn.addEventListener("click", exportPdfReport);
+  }
 
   document.querySelectorAll("th[data-sort]").forEach((th) => {
     th.addEventListener("click", () => {
