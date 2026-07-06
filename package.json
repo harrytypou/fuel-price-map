@@ -1,0 +1,22 @@
+{
+  "name": "eurofuel-atlas-vercel",
+  "version": "2.0.0",
+  "private": true,
+  "description": "A Vercel-ready interactive Europe fuel price map using Fuelo.eu and serverless API routes.",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "vercel dev",
+    "check": "node --check api/fuelo.js && node --check api/rates.js && node --check app.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "fuel-prices",
+    "europe",
+    "fuelo",
+    "vercel",
+    "serverless"
+  ],
+  "license": "MIT"
+}

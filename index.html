@@ -4,1306 +4,237 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>EuroFuel Atlas — Live European Fuel Prices</title>
-  <meta name="description" content="A modern interactive map of European fuel prices powered by Fuelo.eu, with currency conversion and country flags." />
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="preconnect" href="https://flagdownload.com" crossorigin>
-  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #060914;
-      --bg-soft: #0a1020;
-      --panel: rgba(15, 23, 42, 0.72);
-      --panel-strong: rgba(15, 23, 42, 0.95);
-      --card: rgba(17, 25, 46, 0.78);
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --line: rgba(148, 163, 184, 0.18);
-      --line-strong: rgba(148, 163, 184, 0.34);
-      --accent: #38bdf8;
-      --accent-2: #a78bfa;
-      --accent-3: #22c55e;
-      --danger: #fb7185;
-      --warning: #f59e0b;
-      --shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
-      --radius: 28px;
-      --radius-sm: 18px;
-      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      --map-water: rgba(14, 20, 38, 0.72);
-      --country-empty: rgba(71, 85, 105, 0.42);
-    }
-
-    [data-theme="light"] {
-      color-scheme: light;
-      --bg: #f7fafc;
-      --bg-soft: #eaf1f8;
-      --panel: rgba(255, 255, 255, 0.76);
-      --panel-strong: rgba(255, 255, 255, 0.96);
-      --card: rgba(255, 255, 255, 0.78);
-      --text: #0f172a;
-      --muted: #526175;
-      --line: rgba(71, 85, 105, 0.16);
-      --line-strong: rgba(71, 85, 105, 0.32);
-      --shadow: 0 24px 80px rgba(15, 23, 42, 0.13);
-      --map-water: rgba(226, 232, 240, 0.70);
-      --country-empty: rgba(148, 163, 184, 0.48);
-    }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: var(--font);
-      color: var(--text);
-      background:
-        radial-gradient(circle at 18% 0%, rgba(56, 189, 248, 0.25), transparent 34rem),
-        radial-gradient(circle at 84% 8%, rgba(167, 139, 250, 0.20), transparent 32rem),
-        radial-gradient(circle at 70% 78%, rgba(34, 197, 94, 0.10), transparent 30rem),
-        linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
-      overflow-x: hidden;
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
-      background-size: 56px 56px;
-      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 72%);
-      z-index: -1;
-    }
-
-    a { color: inherit; text-decoration: none; }
-    button, select, input { font: inherit; color: inherit; }
-
-    .shell { width: min(1440px, calc(100% - 32px)); margin: 0 auto; }
-
-    .navbar {
-      position: sticky;
-      top: 14px;
-      z-index: 40;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 18px;
-      margin: 14px auto 0;
-      padding: 12px;
-      border: 1px solid var(--line);
-      background: color-mix(in srgb, var(--panel-strong) 78%, transparent);
-      backdrop-filter: blur(22px);
-      border-radius: 999px;
-      box-shadow: 0 12px 40px rgba(0,0,0,.18);
-    }
-
-    .brand { display: flex; align-items: center; gap: 10px; min-width: max-content; padding-left: 4px; }
-    .brand-mark {
-      width: 40px; height: 40px; border-radius: 14px;
-      display: grid; place-items: center;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      box-shadow: 0 10px 26px rgba(56, 189, 248, .28);
-      position: relative;
-      overflow: hidden;
-    }
-    .brand-mark::after {
-      content: "";
-      width: 18px; height: 18px;
-      border: 3px solid rgba(255,255,255,.9);
-      border-top-color: transparent;
-      border-radius: 50%;
-      transform: rotate(-35deg);
-    }
-    .brand strong { letter-spacing: -0.04em; font-size: 1.02rem; }
-    .brand span { display:block; color: var(--muted); font-size:.78rem; margin-top: -2px; }
-
-    .nav-links { display: flex; gap: 8px; align-items: center; justify-content: center; }
-    .nav-links a {
-      padding: 9px 14px;
-      color: var(--muted);
-      border-radius: 999px;
-      transition: .2s ease;
-    }
-    .nav-links a:hover { color: var(--text); background: rgba(148, 163, 184, .12); }
-
-    .nav-actions { display:flex; align-items:center; gap: 8px; }
-    .pill-btn, .theme-toggle, .refresh-btn {
-      border: 1px solid var(--line);
-      background: rgba(148, 163, 184, .10);
-      border-radius: 999px;
-      padding: 10px 14px;
-      cursor: pointer;
-      transition: transform .2s ease, border-color .2s ease, background .2s ease;
-    }
-    .pill-btn:hover, .theme-toggle:hover, .refresh-btn:hover {
-      transform: translateY(-1px);
-      border-color: var(--line-strong);
-      background: rgba(148, 163, 184, .16);
-    }
-    .theme-toggle { width: 42px; height: 42px; display:grid; place-items:center; padding:0; }
-
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 0.95fr) minmax(520px, 1.05fr);
-      gap: 28px;
-      align-items: center;
-      padding: 76px 0 36px;
-    }
-
-    .eyebrow {
-      display: inline-flex; gap: 10px; align-items: center;
-      color: var(--muted);
-      border: 1px solid var(--line);
-      background: rgba(148, 163, 184, .08);
-      border-radius: 999px;
-      padding: 8px 12px;
-      margin-bottom: 20px;
-      backdrop-filter: blur(12px);
-    }
-    .pulse-dot { width: 8px; height: 8px; background: var(--accent-3); border-radius: 50%; box-shadow: 0 0 0 0 rgba(34,197,94,.8); animation: pulse 1.8s infinite; }
-    @keyframes pulse { 70% { box-shadow: 0 0 0 12px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(3rem, 7vw, 7.2rem);
-      line-height: .88;
-      letter-spacing: -0.08em;
-      max-width: 900px;
-    }
-    .gradient-text { background: linear-gradient(90deg, var(--accent), var(--accent-2) 52%, #f472b6); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .hero p {
-      max-width: 680px;
-      color: var(--muted);
-      font-size: clamp(1.02rem, 1.7vw, 1.22rem);
-      line-height: 1.75;
-      margin: 24px 0 28px;
-    }
-
-    .hero-actions { display:flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-    .primary-btn {
-      border: 0;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: white;
-      border-radius: 999px;
-      padding: 13px 18px;
-      font-weight: 750;
-      box-shadow: 0 16px 38px rgba(56, 189, 248, .22);
-      cursor: pointer;
-      transition: transform .2s ease, filter .2s ease;
-    }
-    .primary-btn:hover { transform: translateY(-2px); filter: saturate(1.12); }
-
-    .hero-card {
-      min-height: 520px;
-      border: 1px solid var(--line);
-      background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 94%, transparent), color-mix(in srgb, var(--panel) 80%, transparent));
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      position: relative;
-      overflow: hidden;
-      padding: 26px;
-      isolation: isolate;
-    }
-    .hero-card::before {
-      content:""; position:absolute; inset:-2px;
-      background: radial-gradient(circle at 50% 30%, rgba(56, 189, 248, .18), transparent 34%), radial-gradient(circle at 90% 10%, rgba(167,139,250,.18), transparent 32%);
-      z-index: -1;
-    }
-    .orbital {
-      position: absolute; inset: 40px;
-      border: 1px solid rgba(148, 163, 184, .12);
-      border-radius: 50%;
-      animation: spin 24s linear infinite;
-    }
-    .orbital:nth-child(2) { inset: 90px; animation-duration: 18s; animation-direction: reverse; }
-    .orbital::after {
-      content:""; position:absolute; top: -5px; left: 50%; width: 10px; height: 10px; border-radius:50%; background: var(--accent); box-shadow: 0 0 22px var(--accent);
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .floating-panel {
-      position:absolute;
-      width: 255px;
-      padding: 14px;
-      border: 1px solid var(--line);
-      background: rgba(15,23,42,.80);
-      backdrop-filter: blur(18px);
-      border-radius: 22px;
-      box-shadow: 0 18px 42px rgba(0,0,0,.25);
-      animation: float 5s ease-in-out infinite;
-    }
-    [data-theme="light"] .floating-panel { background: rgba(255,255,255,.86); }
-    .floating-panel.one { top: 46px; left: 36px; }
-    .floating-panel.two { right: 32px; bottom: 56px; animation-delay: -2s; }
-    @keyframes float { 50% { transform: translateY(-12px); } }
-    .floating-panel small { color: var(--muted); }
-    .floating-panel strong { display:block; margin: 8px 0 3px; font-size: 1.55rem; letter-spacing: -0.05em; }
-    .mini-bars { display:flex; gap:7px; align-items:end; height: 46px; margin-top: 12px; }
-    .mini-bars i { flex:1; border-radius:8px 8px 2px 2px; background: linear-gradient(180deg, var(--accent), var(--accent-2)); opacity:.8; }
-    .mini-bars i:nth-child(1) { height:32%; } .mini-bars i:nth-child(2) { height:56%; } .mini-bars i:nth-child(3) { height:42%; } .mini-bars i:nth-child(4) { height:82%; } .mini-bars i:nth-child(5) { height:64%; }
-    .hero-globe {
-      position:absolute; inset: 26px; display:grid; place-items:center; opacity: .72;
-    }
-    .hero-globe svg { width: min(380px, 72%); filter: drop-shadow(0 0 44px rgba(56, 189, 248, .25)); }
-
-    .control-deck {
-      margin: 18px 0 28px;
-      display: grid;
-      grid-template-columns: 1.1fr .8fr .8fr auto;
-      gap: 12px;
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: 26px;
-      background: color-mix(in srgb, var(--panel) 82%, transparent);
-      backdrop-filter: blur(22px);
-      box-shadow: 0 16px 40px rgba(0,0,0,.12);
-    }
-
-    .field { position:relative; }
-    .field label { display:block; font-size:.78rem; color: var(--muted); margin: 0 0 7px 4px; }
-    .field input, .field select {
-      width: 100%;
-      border: 1px solid var(--line);
-      background: rgba(148, 163, 184, .10);
-      border-radius: 18px;
-      min-height: 48px;
-      padding: 0 14px;
-      outline: none;
-      transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
-    }
-    .field input:focus, .field select:focus { border-color: rgba(56,189,248,.55); box-shadow: 0 0 0 4px rgba(56,189,248,.10); }
-
-    .status-chip {
-      align-self:end;
-      min-height: 48px;
-      display:flex; align-items:center; gap:9px;
-      border: 1px solid var(--line);
-      background: rgba(148, 163, 184, .10);
-      border-radius: 18px;
-      padding: 0 14px;
-      color: var(--muted);
-      white-space: nowrap;
-      max-width: 260px;
-      overflow:hidden;
-      text-overflow: ellipsis;
-    }
-
-    .dashboard {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 380px;
-      gap: 22px;
-      align-items: start;
-    }
-
-    .map-panel, .side-panel, .section-card {
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: color-mix(in srgb, var(--panel) 86%, transparent);
-      backdrop-filter: blur(24px);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .panel-header {
-      padding: 20px 22px;
-      border-bottom: 1px solid var(--line);
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    }
-    .panel-header h2, .section-card h2 { margin:0; letter-spacing: -0.04em; font-size: clamp(1.35rem, 2vw, 2rem); }
-    .panel-header p { margin: 5px 0 0; color: var(--muted); }
-
-    .fuel-tabs { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
-    .fuel-tab {
-      border: 1px solid var(--line);
-      background: rgba(148, 163, 184, .10);
-      border-radius:999px;
-      padding: 8px 12px;
-      color: var(--muted);
-      cursor:pointer;
-      transition:.2s ease;
-    }
-    .fuel-tab.active { color:white; border-color: transparent; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 12px 24px rgba(56,189,248,.18); }
-
-    .map-wrap {
-      position:relative;
-      min-height: 680px;
-      background:
-        radial-gradient(circle at 52% 42%, rgba(56, 189, 248, .12), transparent 30%),
-        radial-gradient(circle at 40% 50%, var(--map-water), transparent 65%);
-    }
-
-    #mapSvg { width: 100%; height: 680px; display:block; }
-    .graticule { fill: none; stroke: rgba(148, 163, 184, .10); stroke-width: .7; }
-    .country {
-      stroke: rgba(255,255,255,.28);
-      stroke-width: .65;
-      cursor: pointer;
-      transition: filter .22s ease, opacity .22s ease, stroke-width .22s ease;
-    }
-    [data-theme="light"] .country { stroke: rgba(15,23,42,.32); }
-    .country:hover, .country.is-active {
-      stroke: #fff;
-      stroke-width: 1.65;
-      filter: drop-shadow(0 0 12px rgba(56, 189, 248, .55));
-    }
-    .country.muted { opacity: .28; }
-    .country.no-data { fill: var(--country-empty); }
-
-    .legend {
-      position:absolute; left: 20px; bottom: 20px;
-      width: min(360px, calc(100% - 40px));
-      border: 1px solid var(--line);
-      background: color-mix(in srgb, var(--panel-strong) 86%, transparent);
-      border-radius: 20px;
-      padding: 14px;
-      backdrop-filter: blur(18px);
-    }
-    .legend-title { display:flex; justify-content:space-between; color: var(--muted); font-size:.85rem; margin-bottom:8px; }
-    .legend-gradient { height: 10px; border-radius: 999px; background: linear-gradient(90deg, #22c55e, #38bdf8, #a78bfa, #fb7185); }
-    .legend-scale { display:flex; justify-content:space-between; color: var(--muted); font-size:.78rem; margin-top:8px; }
-
-    .map-tooltip {
-      position: fixed;
-      z-index: 100;
-      pointer-events: none;
-      min-width: 260px;
-      max-width: 320px;
-      border: 1px solid var(--line-strong);
-      background: color-mix(in srgb, var(--panel-strong) 96%, transparent);
-      backdrop-filter: blur(18px);
-      border-radius: 22px;
-      box-shadow: 0 24px 72px rgba(0,0,0,.35);
-      padding: 14px;
-      opacity: 0;
-      transform: translateY(8px) scale(.98);
-      transition: opacity .16s ease, transform .16s ease;
-    }
-    .map-tooltip.show { opacity:1; transform: translateY(0) scale(1); }
-    .tip-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-    .flag { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); box-shadow: 0 6px 18px rgba(0,0,0,.22); background: rgba(148,163,184,.16); }
-    .tip-head strong { display:block; }
-    .tip-head span { color: var(--muted); font-size:.82rem; }
-    .tip-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:8px; }
-    .tip-metric { background: rgba(148,163,184,.10); border:1px solid var(--line); border-radius:14px; padding:9px; }
-    .tip-metric small { display:block; color: var(--muted); font-size:.72rem; margin-bottom:5px; }
-    .tip-metric b { font-size:.98rem; letter-spacing:-.03em; }
-
-    .side-panel { position: sticky; top: 96px; }
-    .stat-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 18px; }
-    .stat-card {
-      border: 1px solid var(--line);
-      background: rgba(148, 163, 184, .08);
-      border-radius: 22px;
-      padding: 15px;
-      transition: transform .2s ease, background .2s ease, border-color .2s ease;
-    }
-    .stat-card:hover { transform: translateY(-3px); background: rgba(148,163,184,.12); border-color: var(--line-strong); }
-    .stat-card small { display:block; color: var(--muted); margin-bottom:8px; }
-    .stat-card b { font-size: 1.45rem; letter-spacing: -.06em; }
-    .stat-card span { display:block; color: var(--muted); font-size:.82rem; margin-top:5px; }
-
-    .spotlight { padding: 0 18px 18px; }
-    .spotlight h3 { margin: 6px 0 12px; letter-spacing:-.03em; }
-    .country-list { display:grid; gap:10px; }
-    .country-row {
-      display:grid; grid-template-columns: 38px 1fr auto;
-      gap: 10px; align-items:center;
-      padding: 10px;
-      border: 1px solid var(--line);
-      background: rgba(148,163,184,.07);
-      border-radius: 18px;
-      cursor:pointer;
-      transition: .2s ease;
-    }
-    .country-row:hover { transform: translateX(4px); border-color: var(--line-strong); background: rgba(148,163,184,.12); }
-    .country-row strong { display:block; font-size:.93rem; }
-    .country-row small { color: var(--muted); }
-    .price-badge { border-radius:999px; padding:7px 10px; background: rgba(56,189,248,.12); color: var(--accent); font-weight:800; font-size:.88rem; }
-
-    .section { padding: 28px 0 0; }
-    .section-card { padding: 22px; }
-    .table-shell { overflow:auto; margin-top: 18px; border:1px solid var(--line); border-radius: 22px; }
-    table { width:100%; border-collapse: collapse; min-width: 760px; }
-    th, td { padding: 14px 16px; border-bottom: 1px solid var(--line); text-align:left; }
-    th { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; background: rgba(148,163,184,.08); }
-    tr { transition: background .16s ease; }
-    tbody tr:hover { background: rgba(148,163,184,.07); }
-    tbody tr:last-child td { border-bottom: 0; }
-    .country-cell { display:flex; align-items:center; gap:10px; font-weight: 750; }
-    .mini-flag { width: 28px; height: 28px; border-radius:50%; object-fit: cover; border:1px solid var(--line); }
-    .source-note { color: var(--muted); line-height:1.7; margin: 14px 0 0; font-size:.92rem; }
-
-    .feature-grid {
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-top: 18px;
-    }
-    .feature-card {
-      border:1px solid var(--line);
-      background: rgba(148, 163, 184, .07);
-      border-radius: 24px;
-      padding: 18px;
-      min-height: 180px;
-      transition:.22s ease;
-    }
-    .feature-card:hover { transform: translateY(-4px); border-color: var(--line-strong); background: rgba(148,163,184,.11); }
-    .feature-icon { width: 42px; height:42px; display:grid; place-items:center; border-radius:15px; background: linear-gradient(135deg, rgba(56,189,248,.22), rgba(167,139,250,.22)); margin-bottom:18px; }
-    .feature-card h3 { margin:0 0 8px; letter-spacing:-.03em; }
-    .feature-card p { margin:0; color:var(--muted); line-height:1.65; }
-
-    footer { padding: 30px 0 46px; color: var(--muted); }
-    footer .section-card { display:flex; justify-content:space-between; gap:20px; align-items:center; }
-    footer a { color: var(--accent); }
-
-    .skeleton { position: relative; overflow: hidden; color: transparent !important; background: rgba(148,163,184,.14) !important; border-radius: 10px; }
-    .skeleton::after { content:""; position:absolute; inset:0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.16), transparent); animation: shimmer 1.2s infinite; }
-    @keyframes shimmer { 100% { transform: translateX(100%); } }
-
-    @media (max-width: 1160px) {
-      .hero { grid-template-columns: 1fr; padding-top: 52px; }
-      .hero-card { min-height: 420px; }
-      .dashboard { grid-template-columns: 1fr; }
-      .side-panel { position: relative; top: 0; }
-      .stat-grid { grid-template-columns: repeat(4,1fr); }
-    }
-    @media (max-width: 860px) {
-      .nav-links { display:none; }
-      .control-deck { grid-template-columns: 1fr; }
-      .status-chip { max-width:none; }
-      .panel-header { display:block; }
-      .fuel-tabs { justify-content:flex-start; margin-top: 12px; }
-      .stat-grid { grid-template-columns: 1fr 1fr; }
-      .feature-grid { grid-template-columns:1fr; }
-      #mapSvg { height: 560px; }
-      .map-wrap { min-height: 560px; }
-      .hero h1 { font-size: clamp(3.2rem, 18vw, 5.5rem); }
-      .floating-panel { width: 220px; }
-      .floating-panel.one { left: 18px; top: 26px; }
-      .floating-panel.two { right: 18px; bottom: 30px; }
-    }
-    @media (max-width: 540px) {
-      .shell { width: min(100% - 20px, 1440px); }
-      .brand span, .nav-actions .pill-btn { display:none; }
-      .navbar { top: 8px; }
-      .hero { padding-top: 42px; }
-      .hero-card { padding: 16px; min-height: 390px; }
-      .stat-grid { grid-template-columns:1fr; }
-      footer .section-card { display:block; }
-    }
-  </style>
+  <meta name="description" content="A modern animated European fuel-price map powered by Fuelo.eu with live currency conversion." />
+  <meta name="theme-color" content="#070b16" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://flagdownload.com" crossorigin />
+  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <nav class="navbar shell" aria-label="Primary navigation">
+  <div class="page-glow page-glow-a"></div>
+  <div class="page-glow page-glow-b"></div>
+
+  <header class="topbar" id="top">
     <a class="brand" href="#top" aria-label="EuroFuel Atlas home">
       <span class="brand-mark" aria-hidden="true"></span>
-      <span><strong>EuroFuel Atlas</strong><span>Live European pump prices</span></span>
+      <span>
+        <strong>EuroFuel Atlas</strong>
+        <small>Fuelo-powered map</small>
+      </span>
     </a>
-    <div class="nav-links" aria-label="Page sections">
+
+    <nav class="nav-links" aria-label="Main navigation">
       <a href="#map">Map</a>
-      <a href="#prices">Prices</a>
-      <a href="#features">Features</a>
-      <a href="#source">Source</a>
-    </div>
-    <div class="nav-actions">
-      <button class="pill-btn" id="refreshTop" type="button">Refresh data</button>
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark mode">☾</button>
-    </div>
-  </nav>
+      <a href="#countries">Countries</a>
+      <a href="#data">Data</a>
+    </nav>
 
-  <main id="top" class="shell">
-    <section class="hero">
-      <div>
-        <div class="eyebrow"><span class="pulse-dot"></span><span id="liveCopy">Fuelo.eu + live FX conversion</span></div>
-        <h1>Fuel prices across <span class="gradient-text">Europe</span>, mapped beautifully.</h1>
-        <p>Hover any country to compare petrol, diesel and LPG prices per litre. Prices are requested from Fuelo in EUR by default, then converted client-side with current exchange rates when you change currency.</p>
-        <div class="hero-actions">
-          <a class="primary-btn" href="#map">Explore the live map</a>
-          <a class="pill-btn" href="#prices">View full table</a>
+    <div class="topbar-actions">
+      <button class="ghost-btn" id="refreshBtn" type="button">Refresh</button>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Toggle theme">☾</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero shell">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="live-dot"></span><span id="heroStatus">Connecting to Fuelo.eu</span></div>
+        <h1>Europe’s fuel prices, mapped in real time.</h1>
+        <p>Compare petrol, diesel and LPG prices across Europe with a clean animated map, real country flags, and live currency conversion. Dark mode is the default.</p>
+        <div class="hero-controls" aria-label="Fuel and currency controls">
+          <div class="control-card">
+            <label for="fuelSelect">Fuel type</label>
+            <select id="fuelSelect">
+              <option value="gasoline95">Gasoline 95</option>
+              <option value="diesel">Diesel</option>
+              <option value="lpg">LPG</option>
+            </select>
+          </div>
+          <div class="control-card">
+            <label for="currencySelect">Currency</label>
+            <select id="currencySelect">
+              <option value="EUR" selected>EUR — Euro</option>
+              <option value="USD">USD — US Dollar</option>
+              <option value="GBP">GBP — Pound Sterling</option>
+              <option value="CHF">CHF — Swiss Franc</option>
+              <option value="NOK">NOK — Norwegian Krone</option>
+              <option value="SEK">SEK — Swedish Krona</option>
+              <option value="DKK">DKK — Danish Krone</option>
+              <option value="PLN">PLN — Polish Zloty</option>
+              <option value="CZK">CZK — Czech Koruna</option>
+              <option value="HUF">HUF — Hungarian Forint</option>
+              <option value="RON">RON — Romanian Leu</option>
+              <option value="BGN">BGN — Bulgarian Lev</option>
+              <option value="TRY">TRY — Turkish Lira</option>
+              <option value="RSD">RSD — Serbian Dinar</option>
+              <option value="ISK">ISK — Icelandic Krona</option>
+            </select>
+          </div>
+          <a class="primary-btn" href="#map">Explore the map</a>
         </div>
       </div>
 
-      <aside class="hero-card" aria-label="Decorative dashboard preview">
-        <div class="orbital"></div>
-        <div class="orbital"></div>
-        <div class="hero-globe" aria-hidden="true">
-          <svg viewBox="0 0 400 400" fill="none">
-            <circle cx="200" cy="200" r="154" stroke="url(#g1)" stroke-width="1.5" opacity=".75"/>
-            <path d="M74 205c55-46 106-62 159-51 36 8 62 28 96 16" stroke="url(#g2)" stroke-width="8" stroke-linecap="round" opacity=".6"/>
-            <path d="M90 266c48-18 84-19 112-2 42 25 67 33 112 18" stroke="url(#g3)" stroke-width="5" stroke-linecap="round" opacity=".5"/>
-            <path d="M165 58c-42 72-43 193 0 284M235 58c42 72 43 193 0 284" stroke="rgba(148,163,184,.35)"/>
-            <path d="M56 200h288M80 128h240M80 272h240" stroke="rgba(148,163,184,.26)"/>
-            <defs>
-              <linearGradient id="g1" x1="50" y1="50" x2="350" y2="350"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
-              <linearGradient id="g2" x1="74" y1="160" x2="330" y2="174"><stop stop-color="#22c55e"/><stop offset=".5" stop-color="#38bdf8"/><stop offset="1" stop-color="#fb7185"/></linearGradient>
-              <linearGradient id="g3" x1="90" y1="270" x2="314" y2="270"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
-            </defs>
-          </svg>
+      <aside class="hero-panel" aria-label="Summary statistics">
+        <div class="panel-header">
+          <span>Live overview</span>
+          <strong id="activeFuelLabel">Gasoline 95</strong>
         </div>
-        <div class="floating-panel one">
-          <small>Cheapest selected fuel</small>
-          <strong id="heroCheapest">Loading…</strong>
-          <span id="heroCheapestMeta" style="color:var(--muted);font-size:.9rem">Fetching latest values</span>
-          <div class="mini-bars"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="stats-grid">
+          <article class="stat-card">
+            <span>Average</span>
+            <strong id="avgPrice">—</strong>
+            <small>per litre</small>
+          </article>
+          <article class="stat-card">
+            <span>Cheapest</span>
+            <strong id="cheapestPrice">—</strong>
+            <small id="cheapestCountry">—</small>
+          </article>
+          <article class="stat-card">
+            <span>Highest</span>
+            <strong id="highestPrice">—</strong>
+            <small id="highestCountry">—</small>
+          </article>
+          <article class="stat-card">
+            <span>Countries</span>
+            <strong id="countryCount">—</strong>
+            <small>loaded</small>
+          </article>
         </div>
-        <div class="floating-panel two">
-          <small>Map coverage</small>
-          <strong id="heroCoverage">—</strong>
-          <span style="color:var(--muted);font-size:.9rem">countries loaded</span>
-          <div class="mini-bars"><i></i><i></i><i></i><i></i><i></i></div>
-        </div>
+        <div class="mini-ranking" id="miniRanking" aria-label="Cheapest countries preview"></div>
       </aside>
     </section>
 
-    <section class="control-deck" aria-label="Controls">
-      <div class="field">
-        <label for="countrySearch">Search country</label>
-        <input id="countrySearch" type="search" placeholder="Greece, Germany, Italy…" autocomplete="off" />
-      </div>
-      <div class="field">
-        <label for="currencySelect">Currency</label>
-        <select id="currencySelect"></select>
-      </div>
-      <div class="field">
-        <label for="sortSelect">Table sorting</label>
-        <select id="sortSelect">
-          <option value="price-asc">Lowest selected fuel first</option>
-          <option value="price-desc">Highest selected fuel first</option>
-          <option value="name-asc">Country A–Z</option>
-          <option value="name-desc">Country Z–A</option>
-        </select>
-      </div>
-      <button class="refresh-btn status-chip" id="refreshButton" type="button" title="Request fresh Fuelo and exchange-rate data">
-        <span class="pulse-dot" style="width:7px;height:7px"></span><span id="statusText">Preparing live fetch…</span>
-      </button>
-    </section>
-
-    <section id="map" class="dashboard">
-      <div class="map-panel">
-        <div class="panel-header">
-          <div>
-            <h2>Animated European price map</h2>
-            <p>Hover, search, change fuel type, or switch currencies.</p>
-          </div>
-          <div class="fuel-tabs" role="tablist" aria-label="Fuel type">
-            <button class="fuel-tab active" data-fuel="gasoline" type="button">Petrol 95</button>
-            <button class="fuel-tab" data-fuel="diesel" type="button">Diesel</button>
-            <button class="fuel-tab" data-fuel="lpg" type="button">LPG</button>
-          </div>
+    <section class="map-section shell" id="map">
+      <div class="section-heading">
+        <div>
+          <span class="kicker">Interactive Europe map</span>
+          <h2>Hover a country marker</h2>
         </div>
-        <div class="map-wrap">
-          <svg id="mapSvg" viewBox="0 0 980 720" role="img" aria-label="Interactive map of Europe with fuel prices"></svg>
-          <div class="legend" aria-label="Map legend">
-            <div class="legend-title"><span>Lower price</span><span>Higher price</span></div>
-            <div class="legend-gradient"></div>
-            <div class="legend-scale"><span id="legendMin">—</span><span id="legendMax">—</span></div>
-          </div>
-          <div id="tooltip" class="map-tooltip" role="status" aria-live="polite"></div>
-        </div>
+        <p>Markers are positioned locally, so the map renders on Vercel without any external map library or CDN dependency.</p>
       </div>
 
-      <aside class="side-panel">
-        <div class="panel-header">
-          <div>
-            <h2>Snapshot</h2>
-            <p id="snapshotSub">Selected fuel: Petrol 95</p>
+      <div class="map-layout">
+        <div class="map-card">
+          <div class="map-toolbar">
+            <div class="segmented" role="tablist" aria-label="Fuel type tabs">
+              <button data-fuel-tab="gasoline95" class="is-active" type="button">Gasoline</button>
+              <button data-fuel-tab="diesel" type="button">Diesel</button>
+              <button data-fuel-tab="lpg" type="button">LPG</button>
+            </div>
+            <div class="map-legend" aria-label="Price legend">
+              <span>Lower</span><span class="legend-bar"></span><span>Higher</span>
+            </div>
           </div>
-        </div>
-        <div class="stat-grid">
-          <div class="stat-card"><small>Average</small><b id="avgPrice">—</b><span>across loaded countries</span></div>
-          <div class="stat-card"><small>Cheapest</small><b id="cheapPrice">—</b><span id="cheapCountry">—</span></div>
-          <div class="stat-card"><small>Highest</small><b id="highPrice">—</b><span id="highCountry">—</span></div>
-          <div class="stat-card"><small>FX date</small><b id="fxDate">—</b><span id="fxSource">EUR base</span></div>
-        </div>
-        <div class="spotlight">
-          <h3>Best prices right now</h3>
-          <div id="bestList" class="country-list"></div>
-        </div>
-      </aside>
-    </section>
 
-    <section id="prices" class="section">
-      <div class="section-card">
-        <div class="panel-header" style="padding:0 0 18px;border-bottom:1px solid var(--line)">
-          <div>
-            <h2>Full European fuel table</h2>
-            <p>Flags are image assets, not emojis. Click any row to highlight it on the map.</p>
+          <div class="europe-map-wrap">
+            <svg id="europeMap" class="europe-map" viewBox="0 0 1000 700" role="img" aria-labelledby="mapTitle mapDesc">
+              <title id="mapTitle">Animated map of European fuel prices</title>
+              <desc id="mapDesc">A stylized map of Europe with interactive country price markers.</desc>
+              <defs>
+                <radialGradient id="seaGlow" cx="50%" cy="38%" r="65%">
+                  <stop offset="0" stop-color="rgba(56,189,248,.18)" />
+                  <stop offset="1" stop-color="rgba(56,189,248,0)" />
+                </radialGradient>
+                <linearGradient id="landGradient" x1="0" x2="1" y1="0" y2="1">
+                  <stop stop-color="rgba(148,163,184,.23)" />
+                  <stop offset="1" stop-color="rgba(30,41,59,.35)" />
+                </linearGradient>
+                <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity=".35"/>
+                </filter>
+              </defs>
+
+              <rect x="0" y="0" width="1000" height="700" rx="28" class="map-sea" />
+              <rect x="0" y="0" width="1000" height="700" rx="28" fill="url(#seaGlow)" />
+
+              <g class="grid-lines" opacity=".35">
+                <path d="M120 80H920M95 190H930M70 300H935M95 410H900M150 520H835M245 620H760" />
+                <path d="M135 70V620M260 60V640M385 55V650M510 65V645M635 70V628M760 92V590M885 145V510" />
+              </g>
+
+              <g class="land" filter="url(#softShadow)">
+                <path class="landmass" d="M401 123c58-29 116-32 175-2 47 24 101 48 164 43 51-4 88 20 106 64 25 62-4 111-58 148-33 23-36 58-20 96 20 48-4 82-52 97-61 18-109-4-162-32-51-28-94-17-137 17-62 48-132 28-154-43-12-39-2-73 27-101 39-38 48-74 11-113-47-50-31-128 100-174Z" />
+                <path class="landmass" d="M163 367c25-51 84-76 138-55 41 16 59 55 46 94-16 48-67 76-119 64-49-12-89-55-65-103Z" />
+                <path class="landmass" d="M454 64c77-50 181-38 229 29 25 34 10 68-32 74-89 13-176-14-224-67-10-11 5-22 27-36Z" />
+                <path class="landmass" d="M282 188c35-39 83-43 115-9 27 29 20 71-16 95-42 29-97 18-119-23-10-20-2-41 20-63Z" />
+                <path class="landmass" d="M217 186c19-21 49-23 67-3 17 19 13 49-10 66-25 19-60 15-75-9-10-17-4-37 18-54Z" />
+                <path class="landmass" d="M79 90c42-31 101-21 122 24 15 33-4 68-47 83-44 15-93 0-112-35-14-26 0-54 37-72Z" />
+                <path class="landmass" d="M736 536c47-30 120-26 162 10 35 30 24 70-23 84-61 18-132-3-157-45-10-18-3-35 18-49Z" />
+                <path class="landmass" d="M833 458c26-18 62-16 84 4 21 19 15 44-13 56-34 15-73 6-88-20-8-15-3-28 17-40Z" />
+              </g>
+
+              <g id="markerLayer" class="marker-layer"></g>
+            </svg>
+            <div class="map-tooltip" id="mapTooltip" role="status" aria-live="polite"></div>
           </div>
         </div>
-        <div class="table-shell">
-          <table>
-            <thead>
-              <tr>
-                <th>Country</th>
-                <th>Petrol 95</th>
-                <th>Diesel</th>
-                <th>LPG</th>
-                <th>Selected fuel rank</th>
-                <th>Data state</th>
-              </tr>
-            </thead>
-            <tbody id="priceTable"></tbody>
-          </table>
-        </div>
-        <p class="source-note" id="sourceNote">Waiting for Fuelo.eu data. If browser security blocks direct scraping, run the included local server so the page can use its same-origin /api/fuelo proxy.</p>
+
+        <aside class="focus-card" id="focusCard">
+          <span class="kicker">Selected country</span>
+          <div class="focus-head">
+            <img id="focusFlag" src="" alt="" loading="lazy" />
+            <div>
+              <h3 id="focusCountry">Hover the map</h3>
+              <p id="focusMeta">Move your mouse over a marker or choose a country below.</p>
+            </div>
+          </div>
+          <div class="focus-prices">
+            <div><span>Gasoline 95</span><strong id="focusGasoline">—</strong></div>
+            <div><span>Diesel</span><strong id="focusDiesel">—</strong></div>
+            <div><span>LPG</span><strong id="focusLpg">—</strong></div>
+          </div>
+          <div class="source-box">
+            <strong id="sourceStatus">Loading live data…</strong>
+            <p id="sourceDetail">The Vercel API route is requesting Fuelo.eu server-side, then the browser renders the map.</p>
+          </div>
+        </aside>
       </div>
     </section>
 
-    <section id="features" class="section">
-      <div class="section-card">
-        <h2>Built like a real product landing page</h2>
-        <div class="feature-grid">
-          <article class="feature-card">
-            <div class="feature-icon">⌁</div>
-            <h3>Live Fuelo pipeline</h3>
-            <p>The page requests Fuelo’s Europe page in EUR and parses the country table. A same-origin proxy path is included for production-friendly use.</p>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon">€</div>
-            <h3>Currency conversion</h3>
-            <p>EUR is the default. Other currencies are calculated from current exchange-rate data without changing the original Fuelo price base.</p>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon">▧</div>
-            <h3>Interactive design</h3>
-            <p>Animated hover states, map tooltips, searchable countries, responsive cards, dark mode by default, and a light mode toggle.</p>
-          </article>
+    <section class="countries-section shell" id="countries">
+      <div class="section-heading">
+        <div>
+          <span class="kicker">Country table</span>
+          <h2>Search, sort, compare</h2>
         </div>
+        <div class="search-box">
+          <input id="countrySearch" type="search" placeholder="Search country…" autocomplete="off" />
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-head">
+          <button data-sort="name" type="button">Country</button>
+          <button data-sort="gasoline95" type="button">Gasoline 95</button>
+          <button data-sort="diesel" type="button">Diesel</button>
+          <button data-sort="lpg" type="button">LPG</button>
+        </div>
+        <div id="countryRows" class="country-rows"></div>
       </div>
     </section>
 
-    <section id="source" class="section">
-      <div class="section-card">
-        <h2>Data & implementation notes</h2>
-        <p class="source-note">Fuel prices are requested from <strong>https://fuelo.eu/?convertto=eur</strong>. Currency conversion is requested from <strong>https://api.frankfurter.dev/v1/latest?base=EUR</strong>. The vector map is loaded from the public world-atlas TopoJSON package. Country flag images are loaded from FlagDownload using PNG URLs such as <strong>https://flagdownload.com/wp-content/uploads/Flag_of_Austria_Flat_Square-1024x1024.png</strong>.</p>
-        <p class="source-note"><strong>Important:</strong> many data websites block browser-side scraping with CORS or bot protection. The included <code>server.js</code> file solves that by serving the page locally and proxying Fuelo through <code>/api/fuelo</code>. For deployment, replace the same route with a Netlify/Vercel/Cloudflare function.</p>
+    <section class="data-section shell" id="data">
+      <div class="data-card">
+        <div>
+          <span class="kicker">How it works</span>
+          <h2>Built for Vercel</h2>
+          <p>This version does not need a custom local Node server, D3 CDN, TopoJSON CDN, or browser-side scraping. The page is static, while Fuelo and currency requests go through Vercel serverless functions in the <code>/api</code> folder.</p>
+        </div>
+        <ul class="feature-list">
+          <li><strong>/api/fuelo</strong><span>Fetches Fuelo.eu in EUR and parses the country fuel table server-side.</span></li>
+          <li><strong>/api/rates</strong><span>Fetches current exchange rates with EUR as the base currency.</span></li>
+          <li><strong>Local SVG map</strong><span>No map CDN dependency, so the map always appears after GitHub → Vercel deploy.</span></li>
+          <li><strong>FlagDownload flags</strong><span>Country flags are loaded as real PNG images from flagdownload.com.</span></li>
+        </ul>
       </div>
     </section>
   </main>
 
-  <footer class="shell">
-    <div class="section-card">
-      <div>
-        <strong style="color:var(--text)">EuroFuel Atlas</strong><br>
-        <span>Modern interactive fuel-price dashboard for Europe.</span>
-      </div>
-      <div>Made for a clean, minimalistic dark-mode experience.</div>
-    </div>
+  <footer class="footer shell">
+    <span>EuroFuel Atlas</span>
+    <span>Fuel source: Fuelo.eu · FX source: Frankfurter · Flags: FlagDownload</span>
   </footer>
 
-  <script>
-    const CONFIG = {
-      fueloUrl: "https://fuelo.eu/?convertto=eur",
-      localProxyUrl: "/api/fuelo?convertto=eur",
-      fxUrl: "https://api.frankfurter.dev/v1/latest?base=EUR",
-      mapUrl: "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
-    };
-
-    const CURRENCIES = [
-      { code: "EUR", label: "Euro", symbol: "€", decimals: 2 },
-      { code: "USD", label: "US dollar", symbol: "$", decimals: 2 },
-      { code: "GBP", label: "British pound", symbol: "£", decimals: 2 },
-      { code: "CHF", label: "Swiss franc", symbol: "CHF", decimals: 2 },
-      { code: "NOK", label: "Norwegian krone", symbol: "kr", decimals: 2 },
-      { code: "SEK", label: "Swedish krona", symbol: "kr", decimals: 2 },
-      { code: "DKK", label: "Danish krone", symbol: "kr", decimals: 2 },
-      { code: "PLN", label: "Polish złoty", symbol: "zł", decimals: 2 },
-      { code: "CZK", label: "Czech koruna", symbol: "Kč", decimals: 2 },
-      { code: "HUF", label: "Hungarian forint", symbol: "Ft", decimals: 0 },
-      { code: "RON", label: "Romanian leu", symbol: "lei", decimals: 2 },
-      { code: "BGN", label: "Bulgarian lev", symbol: "лв", decimals: 2 },
-      { code: "TRY", label: "Turkish lira", symbol: "₺", decimals: 2 }
-    ];
-
-    const COUNTRY_META = [
-      { name:"Albania", iso:"AL", flag:"Albania", aliases:["Albania"] },
-      { name:"Andorra", iso:"AD", flag:"Andorra", aliases:["Andorra"] },
-      { name:"Austria", iso:"AT", flag:"Austria", aliases:["Austria"] },
-      { name:"Belarus", iso:"BY", flag:"Belarus", aliases:["Belarus"] },
-      { name:"Belgium", iso:"BE", flag:"Belgium", aliases:["Belgium"] },
-      { name:"Bosnia and Herzegovina", iso:"BA", flag:"Bosnia_and_Herzegovina", aliases:["Bosnia and Herzegovina", "Bosnia and Herz.", "Bosnia"] },
-      { name:"Bulgaria", iso:"BG", flag:"Bulgaria", aliases:["Bulgaria"] },
-      { name:"Croatia", iso:"HR", flag:"Croatia", aliases:["Croatia"] },
-      { name:"Cyprus", iso:"CY", flag:"Cyprus", aliases:["Cyprus"] },
-      { name:"Czech Republic", iso:"CZ", flag:"Czech_Republic", aliases:["Czechia", "Czech Republic"] },
-      { name:"Denmark", iso:"DK", flag:"Denmark", aliases:["Denmark"] },
-      { name:"Estonia", iso:"EE", flag:"Estonia", aliases:["Estonia"] },
-      { name:"Finland", iso:"FI", flag:"Finland", aliases:["Finland"] },
-      { name:"France", iso:"FR", flag:"France", aliases:["France"] },
-      { name:"Germany", iso:"DE", flag:"Germany", aliases:["Germany"] },
-      { name:"Greece", iso:"GR", flag:"Greece", aliases:["Greece"] },
-      { name:"Hungary", iso:"HU", flag:"Hungary", aliases:["Hungary"] },
-      { name:"Iceland", iso:"IS", flag:"Iceland", aliases:["Iceland"] },
-      { name:"Ireland", iso:"IE", flag:"Ireland", aliases:["Ireland"] },
-      { name:"Italy", iso:"IT", flag:"Italy", aliases:["Italy"] },
-      { name:"Kosovo", iso:"XK", flag:"Kosovo", aliases:["Kosovo"] },
-      { name:"Latvia", iso:"LV", flag:"Latvia", aliases:["Latvia"] },
-      { name:"Liechtenstein", iso:"LI", flag:"Liechtenstein", aliases:["Liechtenstein"] },
-      { name:"Lithuania", iso:"LT", flag:"Lithuania", aliases:["Lithuania"] },
-      { name:"Luxembourg", iso:"LU", flag:"Luxembourg", aliases:["Luxembourg"] },
-      { name:"Malta", iso:"MT", flag:"Malta", aliases:["Malta"] },
-      { name:"Moldova", iso:"MD", flag:"Moldova", aliases:["Moldova", "Republic of Moldova"] },
-      { name:"Monaco", iso:"MC", flag:"Monaco", aliases:["Monaco"] },
-      { name:"Montenegro", iso:"ME", flag:"Montenegro", aliases:["Montenegro"] },
-      { name:"Netherlands", iso:"NL", flag:"Netherlands", aliases:["Netherlands"] },
-      { name:"North Macedonia", iso:"MK", flag:"North_Macedonia", aliases:["North Macedonia", "Macedonia", "Republic of Macedonia"] },
-      { name:"Norway", iso:"NO", flag:"Norway", aliases:["Norway"] },
-      { name:"Poland", iso:"PL", flag:"Poland", aliases:["Poland"] },
-      { name:"Portugal", iso:"PT", flag:"Portugal", aliases:["Portugal"] },
-      { name:"Romania", iso:"RO", flag:"Romania", aliases:["Romania"] },
-      { name:"Russia", iso:"RU", flag:"Russia", aliases:["Russia", "Russian Federation"] },
-      { name:"San Marino", iso:"SM", flag:"San_Marino", aliases:["San Marino"] },
-      { name:"Serbia", iso:"RS", flag:"Serbia", aliases:["Serbia"] },
-      { name:"Slovakia", iso:"SK", flag:"Slovakia", aliases:["Slovakia"] },
-      { name:"Slovenia", iso:"SI", flag:"Slovenia", aliases:["Slovenia"] },
-      { name:"Spain", iso:"ES", flag:"Spain", aliases:["Spain"] },
-      { name:"Sweden", iso:"SE", flag:"Sweden", aliases:["Sweden"] },
-      { name:"Switzerland", iso:"CH", flag:"Switzerland", aliases:["Switzerland"] },
-      { name:"Turkey", iso:"TR", flag:"Turkey", aliases:["Turkey", "Türkiye"] },
-      { name:"Ukraine", iso:"UA", flag:"Ukraine", aliases:["Ukraine"] },
-      { name:"United Kingdom", iso:"GB", flag:"United_Kingdom", aliases:["United Kingdom", "UK", "Great Britain", "England"] },
-      { name:"Vatican City", iso:"VA", flag:"Vatican_City", aliases:["Vatican", "Vatican City", "Holy See"] }
-    ];
-
-    const FALLBACK_PRICES_EUR = {
-      "Albania": { gasoline: 1.76, diesel: 1.87, lpg: 0.69 },
-      "Andorra": { gasoline: 1.50, diesel: 1.50, lpg: 0.88 },
-      "Austria": { gasoline: 1.65, diesel: 1.71, lpg: null },
-      "Belarus": { gasoline: 0.81, diesel: 0.81, lpg: 0.40 },
-      "Belgium": { gasoline: 1.73, diesel: 1.85, lpg: 0.80 },
-      "Bosnia and Herzegovina": { gasoline: 1.45, diesel: 1.50, lpg: 0.71 },
-      "Bulgaria": { gasoline: 1.49, diesel: 1.53, lpg: 0.64 },
-      "Croatia": { gasoline: 1.62, diesel: 1.70, lpg: 0.75 },
-      "Cyprus": { gasoline: 1.51, diesel: 1.62, lpg: null },
-      "Czech Republic": { gasoline: 1.39, diesel: 1.33, lpg: 0.75 },
-      "Denmark": { gasoline: 1.94, diesel: 1.78, lpg: null },
-      "Estonia": { gasoline: 1.65, diesel: 1.55, lpg: 0.75 },
-      "Finland": { gasoline: 1.89, diesel: 1.75, lpg: null },
-      "France": { gasoline: 1.72, diesel: 1.65, lpg: 0.98 },
-      "Germany": { gasoline: 1.76, diesel: 1.68, lpg: 1.05 },
-      "Greece": { gasoline: 1.80, diesel: 1.58, lpg: 0.85 },
-      "Hungary": { gasoline: 1.51, diesel: 1.53, lpg: 0.88 },
-      "Iceland": { gasoline: 2.15, diesel: 2.10, lpg: null },
-      "Ireland": { gasoline: 1.75, diesel: 1.70, lpg: null },
-      "Italy": { gasoline: 1.73, diesel: 1.65, lpg: 0.72 },
-      "Kosovo": { gasoline: 1.30, diesel: 1.35, lpg: 0.65 },
-      "Latvia": { gasoline: 1.61, diesel: 1.55, lpg: 0.79 },
-      "Liechtenstein": { gasoline: 1.85, diesel: 1.90, lpg: null },
-      "Lithuania": { gasoline: 1.50, diesel: 1.43, lpg: 0.70 },
-      "Luxembourg": { gasoline: 1.46, diesel: 1.43, lpg: 0.62 },
-      "Malta": { gasoline: 1.34, diesel: 1.21, lpg: null },
-      "Moldova": { gasoline: 1.32, diesel: 1.20, lpg: 0.70 },
-      "Monaco": { gasoline: 1.95, diesel: 1.90, lpg: null },
-      "Montenegro": { gasoline: 1.48, diesel: 1.39, lpg: 0.75 },
-      "Netherlands": { gasoline: 2.05, diesel: 1.78, lpg: 0.90 },
-      "North Macedonia": { gasoline: 1.28, diesel: 1.18, lpg: 0.68 },
-      "Norway": { gasoline: 1.90, diesel: 1.80, lpg: null },
-      "Poland": { gasoline: 1.45, diesel: 1.50, lpg: 0.70 },
-      "Portugal": { gasoline: 1.68, diesel: 1.55, lpg: 0.82 },
-      "Romania": { gasoline: 1.45, diesel: 1.49, lpg: 0.63 },
-      "Russia": { gasoline: 0.70, diesel: 0.75, lpg: 0.35 },
-      "San Marino": { gasoline: 1.65, diesel: 1.58, lpg: 0.74 },
-      "Serbia": { gasoline: 1.55, diesel: 1.70, lpg: 0.82 },
-      "Slovakia": { gasoline: 1.53, diesel: 1.45, lpg: 0.72 },
-      "Slovenia": { gasoline: 1.50, diesel: 1.53, lpg: 0.82 },
-      "Spain": { gasoline: 1.49, diesel: 1.42, lpg: 0.93 },
-      "Sweden": { gasoline: 1.70, diesel: 1.78, lpg: null },
-      "Switzerland": { gasoline: 1.77, diesel: 1.92, lpg: null },
-      "Turkey": { gasoline: 1.20, diesel: 1.15, lpg: 0.55 },
-      "Ukraine": { gasoline: 1.25, diesel: 1.20, lpg: 0.60 },
-      "United Kingdom": { gasoline: 1.65, diesel: 1.73, lpg: 0.85 },
-      "Vatican City": { gasoline: 1.75, diesel: 1.68, lpg: null }
-    };
-
-    const FX_FALLBACK = {
-      date: "fallback",
-      rates: { USD: 1.08, GBP: 0.86, CHF: 0.96, NOK: 11.4, SEK: 11.2, DKK: 7.46, PLN: 4.30, CZK: 25.2, HUF: 395, RON: 4.97, BGN: 1.9558, TRY: 35.0 }
-    };
-
-    const state = {
-      selectedFuel: "gasoline",
-      selectedCurrency: "EUR",
-      rates: { EUR: 1, ...FX_FALLBACK.rates },
-      fxDate: "—",
-      pricesEur: {},
-      dataState: "loading",
-      mapReady: false,
-      activeCountry: null,
-      search: "",
-      sort: "price-asc",
-      features: []
-    };
-
-    const $ = (id) => document.getElementById(id);
-    const currencyMeta = (code = state.selectedCurrency) => CURRENCIES.find(c => c.code === code) || CURRENCIES[0];
-    const metaByName = new Map(COUNTRY_META.map(c => [c.name, c]));
-
-    function flagUrl(meta) {
-      return `https://flagdownload.com/wp-content/uploads/Flag_of_${meta.flag}_Flat_Square-1024x1024.png`;
-    }
-
-    function normalize(str) {
-      return String(str || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .replace(/&/g, "and")
-        .replace(/[^a-z0-9]+/g, " ")
-        .trim();
-    }
-
-    function matchCountryName(rawName) {
-      const n = normalize(rawName);
-      return COUNTRY_META.find(meta => meta.aliases.some(alias => normalize(alias) === n))?.name || null;
-    }
-
-    function formatPrice(value, fuel = state.selectedFuel, currency = state.selectedCurrency) {
-      if (value == null || Number.isNaN(value)) return "—";
-      const meta = currencyMeta(currency);
-      const converted = value * (state.rates[currency] || 1);
-      const rendered = converted.toLocaleString(undefined, {
-        minimumFractionDigits: meta.decimals,
-        maximumFractionDigits: meta.decimals
-      });
-      return meta.symbol.length <= 2 ? `${meta.symbol}${rendered}/l` : `${rendered} ${meta.symbol}/l`;
-    }
-
-    function priceInSelectedCurrency(value) {
-      if (value == null || Number.isNaN(value)) return null;
-      return value * (state.rates[state.selectedCurrency] || 1);
-    }
-
-    function priceValuesForSelectedFuel() {
-      return COUNTRY_META
-        .map(meta => ({ meta, eur: state.pricesEur[meta.name]?.[state.selectedFuel] ?? null }))
-        .filter(item => item.eur != null && !Number.isNaN(item.eur));
-    }
-
-    function setStatus(text, mode = "neutral") {
-      $("statusText").textContent = text;
-      const dot = document.querySelector("#refreshButton .pulse-dot");
-      if (!dot) return;
-      dot.style.background = mode === "error" ? "var(--warning)" : mode === "live" ? "var(--accent-3)" : "var(--accent)";
-    }
-
-    function parseNumber(text) {
-      const m = String(text || "").match(/(\d{1,3}(?:[\s.,]\d{3})*[.,]\d+|\d+[.,]\d+)/);
-      if (!m) return null;
-      const raw = m[1].replace(/\s/g, "");
-      const normalized = raw.includes(",") && raw.lastIndexOf(",") > raw.lastIndexOf(".")
-        ? raw.replace(/\./g, "").replace(",", ".")
-        : raw.replace(/,/g, "");
-      const n = Number(normalized);
-      return Number.isFinite(n) ? n : null;
-    }
-
-    function parseFueloHtml(html) {
-      const doc = new DOMParser().parseFromString(html, "text/html");
-      const parsed = {};
-      const rows = [...doc.querySelectorAll("tr")];
-
-      for (const tr of rows) {
-        const cells = [...tr.querySelectorAll("th, td")]
-          .map(cell => cell.textContent.replace(/\s+/g, " ").trim())
-          .filter(Boolean);
-        if (cells.length < 2) continue;
-
-        const joined = cells.join(" | ");
-        const country = COUNTRY_META.find(meta => meta.aliases.some(alias => {
-          const exact = new RegExp(`(^|[^A-Za-z])${alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^A-Za-z]|$)`, "i");
-          return exact.test(joined);
-        }));
-        if (!country) continue;
-
-        const nums = cells
-          .map(parseNumber)
-          .filter(n => n != null && n > 0.15 && n < 5.2);
-
-        if (nums.length >= 2) {
-          parsed[country.name] = {
-            gasoline: nums[0] ?? null,
-            diesel: nums[1] ?? null,
-            lpg: nums[2] ?? null
-          };
-        }
-      }
-
-      if (Object.keys(parsed).length >= 10) return parsed;
-
-      // Backup parser for table-like text that has been flattened by a proxy.
-      const text = doc.body?.textContent?.replace(/\s+/g, " ") || html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
-      for (const country of COUNTRY_META) {
-        const names = country.aliases.map(a => a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
-        const re = new RegExp(`(?:${names}).{0,180}?((?:\\d+[,.]\\d+).{0,40}?(?:\\d+[,.]\\d+)(?:.{0,40}?(?:\\d+[,.]\\d+))?)`, "i");
-        const m = text.match(re);
-        if (!m) continue;
-        const nums = [...m[1].matchAll(/\d+[,.]\d+/g)]
-          .map(x => parseNumber(x[0]))
-          .filter(n => n != null && n > 0.15 && n < 5.2);
-        if (nums.length >= 2) {
-          parsed[country.name] = { gasoline: nums[0] ?? null, diesel: nums[1] ?? null, lpg: nums[2] ?? null };
-        }
-      }
-      return parsed;
-    }
-
-    async function requestText(url, timeoutMs = 12000) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const res = await fetch(url, {
-          signal: controller.signal,
-          headers: { "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" }
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.text();
-      } finally {
-        clearTimeout(timeout);
-      }
-    }
-
-    async function fetchFueloPrices() {
-      const urls = [
-        CONFIG.localProxyUrl,
-        CONFIG.fueloUrl,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(CONFIG.fueloUrl)}`,
-        `https://corsproxy.io/?${encodeURIComponent(CONFIG.fueloUrl)}`
-      ];
-      const errors = [];
-      for (const url of urls) {
-        try {
-          const html = await requestText(url);
-          const parsed = parseFueloHtml(html);
-          if (Object.keys(parsed).length >= 10) {
-            return { parsed, url };
-          }
-          errors.push(`${url}: parsed only ${Object.keys(parsed).length} countries`);
-        } catch (err) {
-          errors.push(`${url}: ${err.message}`);
-        }
-      }
-      throw new Error(errors.join("; "));
-    }
-
-    async function fetchExchangeRates() {
-      try {
-        const res = await fetch(CONFIG.fxUrl, { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        state.rates = { EUR: 1, ...data.rates };
-        state.fxDate = data.date || "latest";
-        state.fxSource = "Frankfurter";
-      } catch (err) {
-        state.rates = { EUR: 1, ...FX_FALLBACK.rates };
-        state.fxDate = "fallback";
-        state.fxSource = "Fallback FX";
-      }
-    }
-
-    async function loadData() {
-      setStatus("Fetching Fuelo + FX…");
-      state.dataState = "loading";
-      renderAll();
-      await fetchExchangeRates();
-      try {
-        const result = await fetchFueloPrices();
-        state.pricesEur = { ...FALLBACK_PRICES_EUR, ...result.parsed };
-        state.dataState = "live";
-        setStatus("Live Fuelo data loaded", "live");
-        $("sourceNote").textContent = `Live data loaded from Fuelo in EUR. Source route used: ${result.url}. Currency conversion uses the latest available ${state.fxSource} EUR rates.`;
-      } catch (err) {
-        state.pricesEur = { ...FALLBACK_PRICES_EUR };
-        state.dataState = "fallback";
-        setStatus("Using demo fallback", "error");
-        $("sourceNote").textContent = "Browser-side Fuelo fetching was blocked or the table format could not be parsed, so the page is showing demo fallback values. Run the included server.js file or deploy a /api/fuelo backend proxy to make the Fuelo fetch reliable.";
-        console.warn("Fuelo fetch failed:", err.message);
-      }
-      renderAll();
-    }
-
-    function getFilteredCountries() {
-      const q = normalize(state.search);
-      let items = COUNTRY_META.map(meta => ({ meta, prices: state.pricesEur[meta.name] || {} }));
-      if (q) items = items.filter(item => normalize(item.meta.name).includes(q) || item.meta.aliases.some(a => normalize(a).includes(q)) || item.meta.iso.toLowerCase().includes(q));
-      const fuel = state.selectedFuel;
-      items.sort((a,b) => {
-        const av = a.prices[fuel];
-        const bv = b.prices[fuel];
-        if (state.sort === "name-asc") return a.meta.name.localeCompare(b.meta.name);
-        if (state.sort === "name-desc") return b.meta.name.localeCompare(a.meta.name);
-        if (av == null && bv == null) return a.meta.name.localeCompare(b.meta.name);
-        if (av == null) return 1;
-        if (bv == null) return -1;
-        return state.sort === "price-desc" ? bv - av : av - bv;
-      });
-      return items;
-    }
-
-    function updateStats() {
-      const values = priceValuesForSelectedFuel();
-      const converted = values.map(v => ({ ...v, value: priceInSelectedCurrency(v.eur) })).filter(v => v.value != null);
-      const avg = converted.reduce((s,v) => s + v.value, 0) / (converted.length || 1);
-      const cheapest = converted.slice().sort((a,b) => a.value - b.value)[0];
-      const highest = converted.slice().sort((a,b) => b.value - a.value)[0];
-
-      $("avgPrice").textContent = converted.length ? formatPrice(avg / (state.rates[state.selectedCurrency] || 1)) : "—";
-      $("cheapPrice").textContent = cheapest ? formatPrice(cheapest.eur) : "—";
-      $("cheapCountry").textContent = cheapest?.meta.name || "—";
-      $("highPrice").textContent = highest ? formatPrice(highest.eur) : "—";
-      $("highCountry").textContent = highest?.meta.name || "—";
-      $("fxDate").textContent = state.fxDate || "—";
-      $("fxSource").textContent = state.selectedCurrency === "EUR" ? "EUR base" : `${state.fxSource || "FX"} rate`;
-      $("snapshotSub").textContent = `Selected fuel: ${fuelLabel(state.selectedFuel)} · ${state.selectedCurrency}`;
-      $("heroCheapest").textContent = cheapest ? formatPrice(cheapest.eur) : "Loading…";
-      $("heroCheapestMeta").textContent = cheapest ? cheapest.meta.name : "Fetching latest values";
-      $("heroCoverage").textContent = `${converted.length}/${COUNTRY_META.length}`;
-
-      const best = converted.slice().sort((a,b) => a.value - b.value).slice(0, 5);
-      $("bestList").innerHTML = best.map(item => countryRowHtml(item.meta, state.pricesEur[item.meta.name])).join("");
-      document.querySelectorAll("#bestList .country-row").forEach(row => row.addEventListener("click", () => focusCountry(row.dataset.country)));
-    }
-
-    function fuelLabel(key) {
-      return key === "gasoline" ? "Petrol 95" : key === "diesel" ? "Diesel" : "LPG";
-    }
-
-    function countryRowHtml(meta, prices) {
-      const selected = prices?.[state.selectedFuel];
-      return `
-        <div class="country-row" data-country="${meta.name}">
-          <img class="flag" src="${flagUrl(meta)}" alt="${meta.name} flag" loading="lazy" onerror="this.style.opacity=.15">
-          <div><strong>${meta.name}</strong><small>${fuelLabel(state.selectedFuel)}</small></div>
-          <span class="price-badge">${formatPrice(selected)}</span>
-        </div>`;
-    }
-
-    function renderTable() {
-      const items = getFilteredCountries();
-      const ranked = COUNTRY_META
-        .map(meta => ({ name: meta.name, value: state.pricesEur[meta.name]?.[state.selectedFuel] ?? null }))
-        .filter(x => x.value != null)
-        .sort((a,b) => a.value - b.value)
-        .reduce((acc, item, idx) => (acc[item.name] = idx + 1, acc), {});
-
-      $("priceTable").innerHTML = items.map(({ meta, prices }) => {
-        const stateText = state.dataState === "live" ? "Fuelo/live" : state.dataState === "loading" ? "Loading" : "Demo fallback";
-        return `<tr data-country="${meta.name}">
-          <td><span class="country-cell"><img class="mini-flag" src="${flagUrl(meta)}" alt="${meta.name} flag" loading="lazy" onerror="this.style.opacity=.15">${meta.name}</span></td>
-          <td>${formatPrice(prices.gasoline)}</td>
-          <td>${formatPrice(prices.diesel)}</td>
-          <td>${formatPrice(prices.lpg)}</td>
-          <td>${ranked[meta.name] ? `#${ranked[meta.name]}` : "—"}</td>
-          <td>${stateText}</td>
-        </tr>`;
-      }).join("");
-      document.querySelectorAll("#priceTable tr").forEach(row => row.addEventListener("click", () => focusCountry(row.dataset.country)));
-    }
-
-    function renderCurrencyOptions() {
-      $("currencySelect").innerHTML = CURRENCIES.map(c => `<option value="${c.code}">${c.code} — ${c.label}</option>`).join("");
-      $("currencySelect").value = state.selectedCurrency;
-    }
-
-    function priceDomain() {
-      const vals = priceValuesForSelectedFuel().map(v => priceInSelectedCurrency(v.eur)).filter(v => v != null);
-      if (!vals.length) return [0, 1];
-      return [Math.min(...vals), Math.max(...vals)];
-    }
-
-    function priceColor(eurValue) {
-      if (eurValue == null || Number.isNaN(eurValue)) return "var(--country-empty)";
-      const [min, max] = priceDomain();
-      const value = priceInSelectedCurrency(eurValue);
-      const t = max === min ? 0.5 : Math.max(0, Math.min(1, (value - min) / (max - min)));
-      return d3.interpolateRgbBasis(["#22c55e", "#38bdf8", "#a78bfa", "#fb7185"])(t);
-    }
-
-    function updateLegend() {
-      const [min, max] = priceDomain();
-      const meta = currencyMeta();
-      const toEur = x => x / (state.rates[state.selectedCurrency] || 1);
-      $("legendMin").textContent = Number.isFinite(min) ? formatPrice(toEur(min)) : "—";
-      $("legendMax").textContent = Number.isFinite(max) ? formatPrice(toEur(max)) : "—";
-    }
-
-    async function loadMap() {
-      const svg = d3.select("#mapSvg");
-      const width = 980;
-      const height = 720;
-      svg.selectAll("*").remove();
-
-      const defs = svg.append("defs");
-      defs.append("radialGradient").attr("id", "waterGlow").selectAll("stop")
-        .data([{o:"0%", c:"rgba(56,189,248,.16)"}, {o:"100%", c:"rgba(56,189,248,0)"}])
-        .enter().append("stop").attr("offset", d => d.o).attr("stop-color", d => d.c);
-      svg.append("rect").attr("width", width).attr("height", height).attr("fill", "transparent");
-
-      try {
-        const topology = await d3.json(CONFIG.mapUrl);
-        const features = topojson.feature(topology, topology.objects.countries).features;
-        const projection = d3.geoMercator()
-          .center([18, 53])
-          .scale(520)
-          .translate([width / 2, height / 2]);
-        const path = d3.geoPath(projection);
-        const graticule = d3.geoGraticule().extent([[-28, 33], [55, 72]]).step([10, 10]);
-
-        svg.append("path")
-          .datum(graticule())
-          .attr("class", "graticule")
-          .attr("d", path);
-
-        const europeFeatures = features
-          .map(f => ({ ...f, matchedName: matchCountryName(f.properties?.name || f.id) }))
-          .filter(f => f.matchedName);
-
-        state.features = europeFeatures;
-
-        svg.append("g")
-          .attr("class", "countries")
-          .selectAll("path")
-          .data(europeFeatures)
-          .enter()
-          .append("path")
-          .attr("class", d => `country ${state.pricesEur[d.matchedName]?.[state.selectedFuel] == null ? "no-data" : ""}`)
-          .attr("data-country", d => d.matchedName)
-          .attr("d", path)
-          .attr("fill", d => priceColor(state.pricesEur[d.matchedName]?.[state.selectedFuel]))
-          .attr("opacity", 0)
-          .on("mousemove", (event, d) => showTooltip(event, d.matchedName))
-          .on("mouseenter", function(event, d) {
-            d3.select(this).classed("is-active", true);
-            showTooltip(event, d.matchedName);
-          })
-          .on("mouseleave", function() {
-            d3.select(this).classed("is-active", false);
-            hideTooltip();
-          })
-          .on("click", (event, d) => focusCountry(d.matchedName))
-          .transition()
-          .delay((d, i) => i * 18)
-          .duration(650)
-          .attr("opacity", 1);
-
-        state.mapReady = true;
-        recolorMap();
-      } catch (err) {
-        svg.append("text")
-          .attr("x", width/2)
-          .attr("y", height/2)
-          .attr("text-anchor", "middle")
-          .attr("fill", "var(--muted)")
-          .style("font-size", "18px")
-          .text("Map package could not be loaded. Check your internet connection.");
-        console.warn("Map failed:", err.message);
-      }
-    }
-
-    function recolorMap() {
-      if (!state.mapReady) return;
-      const q = normalize(state.search);
-      d3.selectAll(".country")
-        .classed("no-data", function() {
-          const name = this.getAttribute("data-country");
-          return state.pricesEur[name]?.[state.selectedFuel] == null;
-        })
-        .classed("muted", function() {
-          const name = this.getAttribute("data-country");
-          return q && !normalize(name).includes(q);
-        })
-        .transition()
-        .duration(420)
-        .attr("fill", function() {
-          const name = this.getAttribute("data-country");
-          return priceColor(state.pricesEur[name]?.[state.selectedFuel]);
-        });
-      updateLegend();
-    }
-
-    function showTooltip(event, countryName) {
-      const meta = metaByName.get(countryName);
-      const prices = state.pricesEur[countryName] || {};
-      const tooltip = $("tooltip");
-      tooltip.innerHTML = `
-        <div class="tip-head">
-          <img class="flag" src="${flagUrl(meta)}" alt="${countryName} flag" onerror="this.style.opacity=.15">
-          <div><strong>${countryName}</strong><span>${state.dataState === "live" ? "Fuelo/live" : state.dataState === "loading" ? "Loading data" : "Demo fallback"} · ${state.selectedCurrency}</span></div>
-        </div>
-        <div class="tip-grid">
-          <div class="tip-metric"><small>Petrol 95</small><b>${formatPrice(prices.gasoline)}</b></div>
-          <div class="tip-metric"><small>Diesel</small><b>${formatPrice(prices.diesel)}</b></div>
-          <div class="tip-metric"><small>LPG</small><b>${formatPrice(prices.lpg)}</b></div>
-        </div>`;
-      const pad = 16;
-      const x = Math.min(event.clientX + 18, window.innerWidth - 330);
-      const y = Math.min(event.clientY + 18, window.innerHeight - 180);
-      tooltip.style.left = `${Math.max(pad, x)}px`;
-      tooltip.style.top = `${Math.max(pad, y)}px`;
-      tooltip.classList.add("show");
-    }
-
-    function hideTooltip() {
-      $("tooltip").classList.remove("show");
-    }
-
-    function focusCountry(countryName) {
-      state.activeCountry = countryName;
-      document.querySelectorAll(".country-row, #priceTable tr").forEach(el => {
-        el.style.outline = el.dataset.country === countryName ? "2px solid rgba(56,189,248,.55)" : "none";
-      });
-      d3.selectAll(".country").classed("is-active", function() { return this.getAttribute("data-country") === countryName; });
-      const mapPanel = document.querySelector("#map");
-      mapPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-
-    function renderAll() {
-      updateStats();
-      renderTable();
-      recolorMap();
-    }
-
-    function bindEvents() {
-      $("currencySelect").addEventListener("change", e => {
-        state.selectedCurrency = e.target.value;
-        renderAll();
-      });
-      $("sortSelect").addEventListener("change", e => {
-        state.sort = e.target.value;
-        renderTable();
-      });
-      $("countrySearch").addEventListener("input", e => {
-        state.search = e.target.value;
-        renderTable();
-        recolorMap();
-      });
-      document.querySelectorAll(".fuel-tab").forEach(btn => btn.addEventListener("click", () => {
-        state.selectedFuel = btn.dataset.fuel;
-        document.querySelectorAll(".fuel-tab").forEach(x => x.classList.toggle("active", x === btn));
-        renderAll();
-      }));
-      $("themeToggle").addEventListener("click", () => {
-        const html = document.documentElement;
-        const next = html.dataset.theme === "dark" ? "light" : "dark";
-        html.dataset.theme = next;
-        $("themeToggle").textContent = next === "dark" ? "☾" : "☀";
-      });
-      $("refreshButton").addEventListener("click", loadData);
-      $("refreshTop").addEventListener("click", loadData);
-    }
-
-    function boot() {
-      renderCurrencyOptions();
-      bindEvents();
-      state.pricesEur = { ...FALLBACK_PRICES_EUR };
-      renderAll();
-      loadMap();
-      loadData();
-    }
-
-    boot();
-  </script>
+  <script src="/app.js" defer></script>
 </body>
 </html>
