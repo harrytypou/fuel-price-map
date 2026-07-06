@@ -37,6 +37,12 @@ const sourceMeta = $("sourceMeta");
 const technicalStatus = $("technicalStatus");
 const selectedDetails = $("countryDetails");
 
+// Keep the tooltip outside animated layout containers. This makes cursor tracking
+// exact even when the map/header/sections use CSS animations.
+if (tooltip && tooltip.parentElement !== document.body) {
+  document.body.appendChild(tooltip);
+}
+
 function normalize(text) {
   return String(text || "")
     .normalize("NFD")
@@ -235,12 +241,31 @@ function renderTooltip(country) {
 }
 
 function moveTooltip(event) {
-  const margin = 18;
-  const width = 252;
-  const x = Math.min(window.innerWidth - width - margin, event.clientX + margin);
-  const y = Math.min(window.innerHeight - 170, event.clientY + margin);
-  tooltip.style.left = `${Math.max(margin, x)}px`;
-  tooltip.style.top = `${Math.max(margin, y)}px`;
+  if (!event) return;
+
+  // Use viewport coordinates only. Previous versions calculated position relative
+  // to the animated map container, which made Chrome push the tooltip far to the
+  // right after parent transform animations were added.
+  const margin = 14;
+  const offset = 18;
+  const width = tooltip.offsetWidth || 252;
+  const height = tooltip.offsetHeight || 150;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  let x = event.clientX + offset;
+  let y = event.clientY + offset;
+
+  if (x + width + margin > viewportWidth) {
+    x = event.clientX - width - offset;
+  }
+
+  if (y + height + margin > viewportHeight) {
+    y = event.clientY - height - offset;
+  }
+
+  tooltip.style.left = `${Math.max(margin, Math.min(x, viewportWidth - width - margin))}px`;
+  tooltip.style.top = `${Math.max(margin, Math.min(y, viewportHeight - height - margin))}px`;
 }
 
 function renderDetails(country, pinned = false) {

@@ -27,8 +27,8 @@ body {
 ::selection { background: #f2f2f2; color: #050505; }
 
 @keyframes pageReveal {
-  from { opacity: 0; transform: translateY(18px); filter: blur(8px); }
-  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+  from { opacity: 0; filter: blur(6px); }
+  to { opacity: 1; filter: blur(0); }
 }
 
 @keyframes lineGrow {
@@ -37,13 +37,13 @@ body {
 }
 
 @keyframes mapFadeIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.992); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes countryIn {
-  from { opacity: 0; transform: translateY(6px) scale(0.994); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes dotIn {
@@ -86,23 +86,6 @@ body.is-ready .map-section { animation: pageReveal 680ms cubic-bezier(.2,.8,.2,1
 body.is-ready .stats { animation: pageReveal 560ms cubic-bezier(.2,.8,.2,1) 520ms forwards; }
 body.is-ready .table-section { animation: pageReveal 620ms cubic-bezier(.2,.8,.2,1) 610ms forwards; }
 body.is-ready .source { animation: pageReveal 560ms cubic-bezier(.2,.8,.2,1) 700ms forwards; }
-
-.map-section::before,
-.table-section::before,
-.source::before {
-  content: "";
-  display: block;
-  height: 1px;
-  margin-top: -25px;
-  background: var(--line-strong);
-  transform-origin: left;
-  transform: scaleX(0);
-}
-body.is-ready .map-section::before,
-body.is-ready .table-section::before,
-body.is-ready .source::before {
-  animation: lineGrow 680ms cubic-bezier(.2,.8,.2,1) 340ms forwards;
-}
 
 .map-panel::after {
   content: "";
@@ -177,7 +160,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible
 main {
   max-width: 1420px;
   margin: 0 auto;
-  padding: 46px 32px 80px;
+  padding: 52px 32px 88px;
 }
 
 .hero {
@@ -185,7 +168,7 @@ main {
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 56px;
   align-items: end;
-  padding: 30px 0 42px;
+  padding: 34px 0 48px;
 }
 .eyebrow, .panel-label {
   margin: 0 0 14px;
@@ -198,7 +181,7 @@ main {
 h1, h2, p { margin-top: 0; }
 h1 {
   max-width: 900px;
-  margin-bottom: 18px;
+  margin-bottom: 24px;
   font-size: clamp(42px, 6vw, 76px);
   line-height: 0.98;
   letter-spacing: -0.065em;
@@ -234,7 +217,7 @@ h2 {
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   padding: 16px 0;
-  margin-bottom: 34px;
+  margin-bottom: 44px;
 }
 .segmented { display: flex; border: 1px solid var(--line-strong); }
 .segmented button,
@@ -285,15 +268,15 @@ select {
 .table-section,
 .source {
   border-top: 1px solid var(--line);
-  padding-top: 24px;
-  margin-top: 34px;
+  padding-top: 32px;
+  margin-top: 52px;
 }
 .map-header {
   display: flex;
   align-items: end;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 18px;
+  margin-bottom: 24px;
 }
 .map-header p { color: var(--muted); margin-bottom: 0; }
 .legend {
@@ -386,7 +369,9 @@ select {
 #microLayer g.is-dimmed { opacity: 0.38; }
 .tooltip {
   position: fixed;
-  z-index: 50;
+  left: 0;
+  top: 0;
+  z-index: 1000;
   display: none;
   width: 252px;
   pointer-events: none;
@@ -395,6 +380,7 @@ select {
   border: 1px solid #ffffff;
   padding: 12px;
   box-shadow: 0 18px 42px rgba(0,0,0,0.42);
+  will-change: left, top;
 }
 .tooltip.is-visible { display: block; }
 .tooltip-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -447,7 +433,7 @@ select {
   justify-content: space-between;
   align-items: end;
   gap: 24px;
-  margin-bottom: 18px;
+  margin-bottom: 24px;
 }
 input[type="search"] {
   width: min(360px, 100%);
@@ -566,4 +552,26 @@ tbody tr.is-selected { background: #151515; }
     filter: none !important;
     transform: none !important;
   }
+}
+
+
+/* Tooltip is deliberately positioned against the viewport. Do not place it inside
+   transformed animated containers, or Chrome will offset it incorrectly. */
+#mapTooltip { transform: none !important; }
+
+body.is-ready .site-header,
+body.is-ready .hero-copy,
+body.is-ready .meta-block,
+body.is-ready .toolbar,
+body.is-ready .map-section,
+body.is-ready .stats,
+body.is-ready .table-section,
+body.is-ready .source {
+  transform: none !important;
+}
+
+.map-section,
+.table-section,
+.source {
+  scroll-margin-top: 96px;
 }
